@@ -1,0 +1,163 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  // url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  ADMIN
+  TEACHER
+}
+
+enum Weekday {
+  MONDAY
+  TUESDAY
+  WEDNESDAY
+  THURSDAY
+  FRIDAY
+  SATURDAY
+  SUNDAY
+}
+
+enum RecurrenceType {
+  ONCE
+  WEEKLY
+  BIWEEKLY
+  MONTHLY
+}
+
+enum PaymentMethod {
+  CASH
+  CARD
+}
+
+enum PaymentSchedule {
+  FULL
+  SPLIT
+}
+
+model User {
+  id           Int      @id @default(autoincrement())
+  role         UserRole
+  email        String   @unique
+  firstName    String
+  lastName     String
+  subtitle     String?
+  passwordHash String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  scheduleEntries       ScheduleEntry[] @relation("ScheduleTeacher")
+  targetedAnnouncements Announcement[]  @relation("AnnouncementTarget")
+  authoredAnnouncements Announcement[]  @relation("AnnouncementAuthor")
+
+  @@index([role])
+}
+
+model Room {
+  id    Int     @id @default(autoincrement())
+  name  String  @unique
+  color String?
+
+  scheduleEntries ScheduleEntry[]
+}
+
+model ScheduleEntry {
+  id         Int            @id @default(autoincrement())
+  subject    String
+  weekday    Weekday
+  startTime  String
+  endTime    String
+  duration   Decimal        @db.Decimal(4, 2)
+  color      String?
+  recurrence RecurrenceType
+  anchorDate DateTime       @db.Date
+
+  teacherId Int
+  teacher   User @relation("ScheduleTeacher", fields: [teacherId], references: [id], onDelete: Restrict)
+
+  roomId Int
+  room   Room @relation(fields: [roomId], references: [id], onDelete: Restrict)
+
+  exceptions ScheduleException[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([teacherId, weekday])
+  @@index([roomId, weekday])
+}
+
+model ScheduleException {
+  id            Int      @id @default(autoincrement())
+  cancelledDate DateTime @db.Date
+
+  scheduleEntryId Int
+  scheduleEntry   ScheduleEntry @relation(fields: [scheduleEntryId], references: [id], onDelete: Cascade)
+
+  @@unique([scheduleEntryId, cancelledDate])
+}
+
+model Announcement {
+  id          Int      @id @default(autoincrement())
+  title       String
+  body        String
+  publishedAt DateTime @default(now())
+
+  targetTeacherId Int?
+  targetTeacher   User? @relation("AnnouncementTarget", fields: [targetTeacherId], references: [id], onDelete: SetNull)
+
+  authorId Int?
+  author   User? @relation("AnnouncementAuthor", fields: [authorId], references: [id], onDelete: SetNull)
+
+  @@index([publishedAt])
+  @@index([targetTeacherId])
+}
+
+model Student {
+  id              Int             @id @default(autoincrement())
+  parentFullName  String
+  parentPhone     String
+  childFullName   String
+  paymentMethod   PaymentMethod
+  paymentSchedule PaymentSchedule
+
+  fees     Fee[]
+  payments Payment[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Fee {
+  id     Int      @id @default(autoincrement())
+  amount Decimal  @db.Decimal(10, 2)
+  date   DateTime @db.Date
+  note   String?
+
+  studentId Int
+  student   Student @relation(fields: [studentId], references: [id], onDelete: Restrict)
+
+  createdAt DateTime @default(now())
+
+  @@index([studentId, date])
+}
+
+model Payment {
+  id     Int           @id @default(autoincrement())
+  amount Decimal       @db.Decimal(10, 2)
+  date   DateTime      @db.Date
+  method PaymentMethod
+  note   String?
+
+  studentId Int
+  student   Student @relation(fields: [studentId], references: [id], onDelete: Restrict)
+
+  createdAt DateTime @default(now())
+
+  @@index([studentId, date])
+}
