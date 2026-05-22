@@ -1,14 +1,12 @@
 import {
-  PrismaClient,
   UserRole,
   Weekday,
   RecurrenceType,
   PaymentMethod,
   PaymentSchedule,
-} from '@prisma/client'
+} from '../src/generated/prisma/client'
 import { ROOMS, ROOM_COLORS, TEACHERS } from '../src/constants'
-
-const prisma = new PrismaClient()
+import { prisma } from '../src/lib/prisma'
 
 const UI_DAY_TO_WEEKDAY: Record<string, Weekday> = {
   Monday: Weekday.MONDAY,
@@ -182,9 +180,9 @@ async function main() {
   await prisma.student.createMany({
     data: [
       {
-        parentFullName: 'Иван Иванов',
+        parentFullName: 'Иван Иванов Димитров',
         parentPhone: '0888 123 456',
-        childFullName: 'Maria Ivanova Petrova',
+        childFullName: 'Мария Иванова Димитрова',
         paymentMethod: PaymentMethod.CASH,
         paymentSchedule: PaymentSchedule.SPLIT,
       },

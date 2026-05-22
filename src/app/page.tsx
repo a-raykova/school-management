@@ -1,15 +1,9 @@
 'use client'
 
-import { useState, useMemo, useEffect } from 'react'
+import { useState, useMemo, useEffect, useCallback } from 'react'
 import { NavPage, ScheduleEntry, Announcement, CurrentUser, UserRole, Student, Fee, Payment, PaymentMethod } from '@/types'
-import {
-  initialSchedule,
-  initialAnnouncements,
-  mockStudents,
-  mockPayments, 
-  mockFees
-} from '@/data/mockData'
-import { currentUser as mockUser } from '@/data/mockData'
+import * as api from '@/lib/api-client'
+import type { ScheduleCreateInput } from '@/lib/mappers'
 
 import Sidebar       from '@/components/layout/Sidebar'
 import Dashboard     from '@/components/dashboard/Dashboard'
@@ -28,24 +22,54 @@ import { computeBusiestDay } from '@/utils/dashboard'
 
 export default function Page() {
   const [activePage,     setActivePage]     = useState<NavPage>('dashboard')
-  const [schedule,       setSchedule]       = useState<ScheduleEntry[]>(initialSchedule)
-  const [announcements,  setAnnouncements]  = useState<Announcement[]>(initialAnnouncements)
-  const [user, setUser] = useState<CurrentUser>(mockUser)
-  const [students, setStudents] = useState<Student[]>(mockStudents)
-  const [payments, setPayments] = useState<Payment[]>(mockPayments)
-  const [fees, setFees] = useState<Fee[]>(mockFees)
+  const [schedule,       setSchedule]       = useState<ScheduleEntry[]>([])
+  const [announcements,  setAnnouncements]  = useState<Announcement[]>([])
+  const [user, setUser] = useState<CurrentUser | null>(null)
+  const [students, setStudents] = useState<Student[]>([])
+  const [payments, setPayments] = useState<Payment[]>([])
+  const [fees, setFees] = useState<Fee[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
 
-  // for live updating of the rooms
-  const [rooms, setRooms] = useState(() => computeRooms(schedule))
+  const [rooms, setRooms] = useState(() => computeRooms([]))
 
   const [teachers, setTeachers] = useState(() => {
     const today = new Date(); today.setHours(0, 0, 0, 0)
-    return computeTeacherHours(schedule, today.getFullYear(), today.getMonth(), today)
+    return computeTeacherHours([], today.getFullYear(), today.getMonth(), today)
   })
 
-  // card with busiest day
+  const refreshAnnouncements = useCallback(async () => {
+    const data = await api.fetchAnnouncements()
+    setAnnouncements(data)
+  }, [])
+
+  useEffect(() => {
+    let cancelled = false
+    ;(async () => {
+      try {
+        setLoading(true)
+        setError(null)
+        const data = await api.loadDashboardData()
+        if (cancelled) return
+        setUser(data.user)
+        setSchedule(data.schedule)
+        setAnnouncements(data.announcements)
+        setStudents(data.students)
+        setPayments(data.payments)
+        setFees(data.fees)
+      } catch (e) {
+        if (!cancelled) {
+          setError(e instanceof Error ? e.message : 'Failed to load data')
+        }
+      } finally {
+        if (!cancelled) setLoading(false)
+      }
+    })()
+    return () => { cancelled = true }
+  }, [])
+
   const busiestDay = useMemo(() =>
-    user.role === 'admin' ? null : computeBusiestDay(schedule, `${user.firstName} ${user.lastName}`),
+    user && user.role === 'admin' ? null : computeBusiestDay(schedule, user ? `${user.firstName} ${user.lastName}` : ''),
   [schedule, user])
 
   useEffect(() => {
@@ -59,95 +83,95 @@ export default function Page() {
     return () => clearInterval(id)
   }, [schedule])
 
-  const handleSwitchRole = (role: UserRole) => setUser(u => ({ ...u, role }))
+  const handleSwitchRole = (role: UserRole) =>
+    setUser((u) => (u ? { ...u, role } : u))
 
-  const handleAddSchedule = (entry: Omit<ScheduleEntry, 'id'>) =>
-    setSchedule((prev) => [...prev, { ...entry, id: Date.now() }])
-
-  // removes all occurrences + notifies teacher
-  const handleRemoveSchedule = (id: number) => {
-    const entry = schedule.find(e => e.id === id)
-    if (entry) {
-      setAnnouncements(prev => [{
-        id: Date.now(),
-        title: `Class cancelled: ${entry.subject}`,
-        body: `Your ${entry.subject} class on ${entry.day} at ${entry.start} (${entry.room}) has been removed from the schedule.`,
-        date: new Date().toISOString().slice(0, 10),
-        isNew: true,
-        targetTeacher: entry.teacher,
-      }, ...prev])
+  const runMutation = async (fn: () => Promise<void>) => {
+    try {
+      setError(null)
+      await fn()
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Something went wrong')
     }
-    setSchedule(prev => prev.filter(e => e.id !== id))
   }
 
-  // removes a single occurrence + notifies teacher
-  const handleRemoveOccurrence = (id: number, date: string) => {
-    const entry = schedule.find(e => e.id === id)
-    if (entry) {
-      setAnnouncements(prev => [{
-        id: Date.now(),
-        title: `Class cancelled: ${entry.subject}`,
-        body: `Your ${entry.subject} class on ${date} at ${entry.start} (${entry.room}) has been cancelled.`,
-        date: new Date().toISOString().slice(0, 10),
-        isNew: true,
-        targetTeacher: entry.teacher,
-      }, ...prev])
-    }
-    setSchedule(prev => prev.map(e =>
-      e.id === id ? { ...e, exceptions: [...(e.exceptions ?? []), date] } : e
-    ))
-  }
+  const handleAddSchedule = (entry: ScheduleCreateInput) =>
+    runMutation(async () => {
+      const created = await api.createScheduleEntry(entry)
+      setSchedule((prev) => [...prev, created])
+    })
 
-  const handleEditSchedule = (updated: ScheduleEntry) => {
-    const prev = schedule.find(e => e.id === updated.id)
-    if (prev) {
-      const changes: string[] = []
-      if (prev.day   !== updated.day)   changes.push(`day changed from ${prev.day} to ${updated.day}`)
-      if (prev.start !== updated.start) changes.push(`start time changed from ${prev.start} to ${updated.start}`)
-      if (prev.end   !== updated.end)   changes.push(`end time changed from ${prev.end} to ${updated.end}`)
-      if (prev.room  !== updated.room)  changes.push(`room changed from ${prev.room} to ${updated.room}`)
+  const handleRemoveSchedule = (id: number) =>
+    runMutation(async () => {
+      await api.deleteScheduleEntry(id)
+      setSchedule((prev) => prev.filter((e) => e.id !== id))
+      await refreshAnnouncements()
+    })
 
-      if (changes.length > 0) {
-        setAnnouncements(a => [{
-          id: Date.now(),
-          title: `Schedule update: ${updated.subject}`,
-          body: `Your ${updated.subject} class has been updated — ${changes.join(', ')}.`,
-          date: new Date().toISOString().slice(0, 10),
-          isNew: true,
-          targetTeacher: updated.teacher,
-        }, ...a])
-      }
-    }
-    setSchedule(prev => prev.map(e => e.id === updated.id ? updated : e))
-  }
+  const handleRemoveOccurrence = (id: number, date: string) =>
+    runMutation(async () => {
+      const updated = await api.addScheduleException(id, date)
+      setSchedule((prev) => prev.map((e) => (e.id === id ? updated : e)))
+      await refreshAnnouncements()
+    })
+
+  const handleEditSchedule = (updated: ScheduleEntry) =>
+    runMutation(async () => {
+      const { id, exceptions: _ex, ...input } = updated
+      const saved = await api.updateScheduleEntry(id, input)
+      setSchedule((prev) => prev.map((e) => (e.id === id ? saved : e)))
+      await refreshAnnouncements()
+    })
 
   const handlePostAnnouncement = (title: string, body: string) =>
-    setAnnouncements((prev) => [
-      { id: Date.now(), title, body, date: 'Today', isNew: true },
-      ...prev,
-    ])
+    runMutation(async () => {
+      const created = await api.createAnnouncement(title, body, user?.id)
+      setAnnouncements((prev) => [{ ...created, isNew: true }, ...prev])
+    })
 
-  const handleLogPayment = (studentId: number, amount: number, method: PaymentMethod, note?: string) =>
-    setPayments(prev => [
-      ...prev,
-      {
-        id: Date.now(),
-        studentId,
-        amount,
-        date: new Date().toISOString().split('T')[0],
-        method,
-        note,
-      },
-    ])
+  const handleLogPayment = (
+    studentId: number,
+    amount: number,
+    method: PaymentMethod,
+    note?: string,
+  ) =>
+    runMutation(async () => {
+      const created = await api.createPayment(studentId, amount, method, note)
+      setPayments((prev) => [...prev, created])
+    })
 
   const handleAddFee = (studentId: number, amount: number, note?: string) =>
-    setFees(prev => [...prev, { id: Date.now(), studentId, amount, note, date: new Date().toISOString().slice(0, 10) }])
+    runMutation(async () => {
+      const created = await api.createFee(studentId, amount, note)
+      setFees((prev) => [...prev, created])
+    })
+
+  if (loading) {
+    return (
+      <div className="flex h-screen items-center justify-center bg-gray-50 text-gray-500 text-sm">
+        Loading…
+      </div>
+    )
+  }
+
+  if (error || !user) {
+    return (
+      <div className="flex h-screen items-center justify-center bg-gray-50 text-red-600 text-sm px-4 text-center">
+        {error ?? 'Failed to load user'}
+      </div>
+    )
+  }
 
   return (
     <div className="flex h-screen overflow-hidden bg-gray-50">
       <Sidebar activePage={activePage} onNavigate={setActivePage} user={user} onSwitchRole={handleSwitchRole} />
 
       <main className="flex-1 overflow-y-auto p-5">
+        {error && (
+          <div className="mb-4 rounded-lg bg-red-50 text-red-700 text-sm px-4 py-2">
+            {error}
+          </div>
+        )}
         {activePage === 'dashboard' && (
           <Dashboard
             rooms={rooms}
