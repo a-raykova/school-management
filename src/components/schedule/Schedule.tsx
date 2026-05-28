@@ -3,19 +3,13 @@
 import { useState, useMemo, useEffect } from 'react'
 import { ScheduleEntry, RecurrenceType, CurrentUser } from '@/types'
 import Modal, { ModalFooter } from '@/components/layout/Modal'
-import { ROOMS, TEACHERS, ROOM_COLORS, ALL_DAYS, DAY_SHORT, RECURRENCE_LABELS } from '@/constants'
+import { ROOMS, TEACHERS, ROOM_COLORS, ALL_DAYS, DAY_SHORT, RECURRENCE_LABELS, inputCls, labelCls } from '@/constants'
 import { toISO } from '@/utils/date'
 import { getWeekStart, addDays, addWeeks, dateForDayInWeek, entryOccursInWeek } from '@/utils/schedule'
 
 /* ─────────────────────────── constants ─────────────────────────── */
 
 // all schedule constants are moved to /constants/index.ts
-
-const inputCls =
-  'w-full px-2.5 py-1.5 rounded-lg text-[13px] focus:outline-none transition-colors ' +
-  'bg-white border border-gray-300 text-gray-800 placeholder-gray-400 focus:border-blue-500'
-const labelCls = 'block text-[11px] font-medium text-gray-500 uppercase tracking-wider mb-1'
-
 /* ─────────────────────────── helpers ───────────────────────────── */
 
 

@@ -2,6 +2,8 @@
 
 import { NavPage, CurrentUser, UserRole } from '@/types'
 import Image from 'next/image'
+import { createClient } from '@/lib/supabase/client'
+import { useRouter } from 'next/navigation'
 
 interface SidebarProps {
   activePage: NavPage
@@ -22,6 +24,13 @@ const navItems: { id: NavPage; label: string; icon: string }[] = [
 
 export default function Sidebar({ activePage, onNavigate, user, onSwitchRole }: SidebarProps) {
   const portalLabel = user.role === 'admin' ? 'Staff portal' : 'Teacher portal'
+  const supabase = createClient()
+  const router = useRouter()
+
+  const handleSignOut = async () => {
+    await supabase.auth.signOut()
+    router.push('/sign-in')
+  }
 
   return (
     <aside className="w-[52px] sm:w-[200px] min-w-[52px] sm:min-w-[200px] bg-white border-r border-gray-100 flex flex-col h-full transition-all">
@@ -92,6 +101,32 @@ export default function Sidebar({ activePage, onNavigate, user, onSwitchRole }: 
                 </span>
               </button>
             ))}
+
+            {/* Sign out */}
+            <button
+              type="button"
+              onClick={handleSignOut}
+              title="Sign out"
+              className="w-full flex items-center justify-center sm:justify-start gap-2.5 py-[9px] sm:px-0 text-[13px] transition-colors text-left rounded-lg text-gray-500 hover:bg-red-50 hover:text-red-600"
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width={18}
+                height={18}
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth={1.8}
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                className="shrink-0 opacity-60"
+              >
+                <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+                <polyline points="16 17 21 12 16 7" />
+                <line x1="21" y1="12" x2="9" y2="12" />
+              </svg>
+              <span className="hidden sm:block">Sign out</span>
+            </button>
           </div>
         </div>
       </nav>
