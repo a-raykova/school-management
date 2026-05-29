@@ -8,6 +8,7 @@ import {
   createScheduleUpdateAnnouncement,
   updateScheduleEntry,
 } from '@/lib/schedule-service'
+import { requireAuth } from '@/lib/require-auth'
 
 type RouteContext = { params: { id: string } }
 
@@ -17,6 +18,10 @@ function parseId(id: string) {
 }
 
 export async function PATCH(request: Request, { params }: RouteContext) {
+  //admin only
+  const { dbUser, error } = await requireAuth()
+  if (error) return error
+
   const entryId = parseId(params.id)
   if (!entryId) return jsonError('Invalid schedule entry id')
 
@@ -31,6 +36,16 @@ export async function PATCH(request: Request, { params }: RouteContext) {
   })
   if (!existing) return jsonError('Schedule entry not found', 404)
 
+  // teachers can only edit their own entries
+  if (dbUser.role !== 'ADMIN' && existing.teacherId !== dbUser.id) {
+    return jsonError('Forbidden', 403)
+  }
+
+  // teachers cannot reassign entries to other teachers
+  if (dbUser.role !== 'ADMIN') {
+    body.teacher = `${dbUser.firstName} ${dbUser.lastName}`
+  }
+
   const prev = toScheduleEntry(existing)
 
   try {
@@ -44,6 +59,9 @@ export async function PATCH(request: Request, { params }: RouteContext) {
 }
 
 export async function DELETE(_request: Request, { params }: RouteContext) {
+  const { dbUser, error } = await requireAuth()
+  if (error) return error
+
   const entryId = parseId(params.id)
   if (!entryId) return jsonError('Invalid schedule entry id')
 
@@ -52,6 +70,11 @@ export async function DELETE(_request: Request, { params }: RouteContext) {
     include: scheduleInclude,
   })
   if (!existing) return jsonError('Schedule entry not found', 404)
+
+  // teachers can only delete their own entries
+  if (dbUser.role !== 'ADMIN' && existing.teacherId !== dbUser.id) {
+    return jsonError('Forbidden', 403)
+  }
 
   const entry = toScheduleEntry(existing)
   await createCancellationAnnouncement(

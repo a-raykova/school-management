@@ -4,6 +4,7 @@ import { scheduleInclude } from '@/lib/db-helpers'
 import { toScheduleEntry } from '@/lib/mappers'
 import { createScheduleEntry } from '@/lib/schedule-service'
 import type { ScheduleCreateInput } from '@/lib/mappers'
+import { requireAuth } from '@/lib/require-auth'
 
 export async function GET() {
   const rows = await prisma.scheduleEntry.findMany({
@@ -14,9 +15,18 @@ export async function GET() {
 }
 
 export async function POST(request: Request) {
+  const { dbUser, error } = await requireAuth()
+  if (error) return error
+
   const body = await parseJsonBody<ScheduleCreateInput>(request)
   if (!body?.subject || !body.day || !body.teacher || !body.room) {
     return jsonError('Invalid schedule entry payload')
+  }
+
+  // teachers can only create entries for themselves —
+  // override whatever teacher was sent in the body with the logged-in user's id
+  if (dbUser.role !== 'ADMIN') {
+    body.teacher = `${dbUser.firstName} ${dbUser.lastName}`
   }
 
   try {

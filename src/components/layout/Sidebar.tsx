@@ -9,7 +9,6 @@ interface SidebarProps {
   activePage: NavPage
   onNavigate: (page: NavPage) => void
   user: CurrentUser
-  onSwitchRole: (role: UserRole) => void
 }
 
 const navItems: { id: NavPage; label: string; icon: string }[] = [
@@ -22,7 +21,7 @@ const navItems: { id: NavPage; label: string; icon: string }[] = [
   { id: 'announcements', label: 'Announcements', icon: '/announcement.png' },
 ]
 
-export default function Sidebar({ activePage, onNavigate, user, onSwitchRole }: SidebarProps) {
+export default function Sidebar({ activePage, onNavigate, user }: SidebarProps) {
   const portalLabel = user.role === 'admin' ? 'Staff portal' : 'Teacher portal'
   const supabase = createClient()
   const router = useRouter()
@@ -131,7 +130,7 @@ export default function Sidebar({ activePage, onNavigate, user, onSwitchRole }: 
         </div>
       </nav>
 
-      {/* User + role switcher */}
+      {/* User info */}
       <div className="px-2 sm:px-4 py-3 border-t border-gray-100 mt-auto">
         <div className="flex items-center justify-center sm:justify-start gap-2">
           <div className={`w-7 h-7 rounded-full flex items-center justify-center text-[11px] font-medium shrink-0 ${
@@ -143,24 +142,6 @@ export default function Sidebar({ activePage, onNavigate, user, onSwitchRole }: 
             <div className="text-[12px] font-medium text-gray-800 truncate">{user.firstName} {user.lastName}</div>
             <div className="text-[11px] text-gray-400 truncate">{user.subtitle}</div>
           </div>
-        </div>
-
-        {/* Role switcher */}
-        <div className="mt-2.5 hidden sm:flex rounded-lg border border-gray-100 overflow-hidden text-[10px]">
-          {(['teacher', 'admin'] as UserRole[]).map(role => (
-            <button
-              key={role}
-              type="button"
-              onClick={() => onSwitchRole(role)}
-              className={`flex-1 py-1.5 font-medium capitalize transition-colors ${
-                user.role === role
-                  ? role === 'admin' ? 'bg-violet-50 text-violet-800' : 'bg-blue-50 text-blue-800'
-                  : 'text-gray-400 hover:bg-gray-50'
-              }`}
-            >
-              {role}
-            </button>
-          ))}
         </div>
       </div>
     </aside>

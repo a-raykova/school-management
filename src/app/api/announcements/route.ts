@@ -1,24 +1,25 @@
 import { prisma } from '@/lib/prisma'
 import { jsonError, jsonOk, parseJsonBody } from '@/lib/api-response'
 import { toAnnouncement } from '@/lib/mappers'
+import { requireAuth } from '@/lib/require-auth'
 
 const announcementInclude = {
   targetTeacher: true,
 } as const
 
 export async function GET(request: Request) {
-  const { searchParams } = new URL(request.url)
-  const teacherId = searchParams.get('teacherId')
+  const { dbUser, error } = await requireAuth()
+  if (error) return error
 
   const rows = await prisma.announcement.findMany({
-    where: teacherId
-      ? {
+    where: dbUser.role === 'ADMIN'
+      ? undefined
+      : {
           OR: [
             { targetTeacherId: null },
-            { targetTeacherId: Number(teacherId) || undefined },
+            { targetTeacherId: dbUser.id },
           ],
-        }
-      : undefined,
+        },
     include: announcementInclude,
     orderBy: { publishedAt: 'desc' },
   })
@@ -27,10 +28,12 @@ export async function GET(request: Request) {
 }
 
 export async function POST(request: Request) {
+  const { dbUser, error } = await requireAuth()
+  if (error) return error
+
   const body = await parseJsonBody<{
     title: string
     body: string
-    authorId?: number
     targetTeacher?: string
   }>(request)
 
@@ -55,7 +58,7 @@ export async function POST(request: Request) {
     data: {
       title: body.title.trim(),
       body: body.body.trim(),
-      authorId: body.authorId ?? null,
+      authorId: dbUser.id,  // always use the logged-in user, never trust the client
       targetTeacherId,
     },
     include: announcementInclude,

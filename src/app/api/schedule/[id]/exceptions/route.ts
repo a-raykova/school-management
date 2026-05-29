@@ -3,10 +3,14 @@ import { jsonError, jsonOk, parseJsonBody } from '@/lib/api-response'
 import { scheduleInclude } from '@/lib/db-helpers'
 import { toScheduleEntry } from '@/lib/mappers'
 import { createCancellationAnnouncement } from '@/lib/schedule-service'
+import { requireAuth } from '@/lib/require-auth'
 
 type RouteContext = { params: { id: string } }
 
 export async function POST(request: Request, { params }: RouteContext) {
+  const { dbUser, error } = await requireAuth()
+  if (error) return error
+
   const entryId = Number(params.id)
   if (!Number.isInteger(entryId) || entryId <= 0) {
     return jsonError('Invalid schedule entry id')
@@ -20,6 +24,12 @@ export async function POST(request: Request, { params }: RouteContext) {
     include: scheduleInclude,
   })
   if (!existing) return jsonError('Schedule entry not found', 404)
+
+  // teachers can only add exceptions to their own entries
+  const fullName = `${dbUser.firstName} ${dbUser.lastName}`
+  if (dbUser.role !== 'ADMIN' && existing.teacherId !== dbUser.id) {
+    return jsonError('Forbidden', 403)
+  }
 
   const entry = toScheduleEntry(existing)
   if (entry.exceptions?.includes(body.date)) {

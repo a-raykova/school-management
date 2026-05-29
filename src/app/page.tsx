@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useMemo, useEffect, useCallback } from 'react'
-import { NavPage, ScheduleEntry, Announcement, CurrentUser, UserRole, Student, Fee, Payment, PaymentMethod } from '@/types'
+import { NavPage, ScheduleEntry, Announcement, CurrentUser, Student, Fee, Payment, PaymentMethod } from '@/types'
 import * as api from '@/lib/api-client'
 import type { ScheduleCreateInput } from '@/lib/mappers'
 
@@ -44,29 +44,46 @@ export default function Page() {
   }, [])
 
   useEffect(() => {
-    let cancelled = false
-    ;(async () => {
-      try {
-        setLoading(true)
-        setError(null)
-        const data = await api.loadDashboardData()
+  let cancelled = false
+  ;(async () => {
+    try {
+      setLoading(true)
+      setError(null)
+
+      const user = await api.fetchCurrentUser()
+      if (cancelled) return
+      setUser(user)
+
+      const [schedule, announcements] = await Promise.all([
+        api.fetchSchedule(),
+        api.fetchAnnouncements(),
+      ])
+      if (cancelled) return
+      setSchedule(schedule)
+      setAnnouncements(announcements)
+
+      if (user.role === 'admin') {
+        const [students, payments, fees] = await Promise.all([
+          api.fetchStudents(),
+          api.fetchPayments(),
+          api.fetchFees(),
+        ])
         if (cancelled) return
-        setUser(data.user)
-        setSchedule(data.schedule)
-        setAnnouncements(data.announcements)
-        setStudents(data.students)
-        setPayments(data.payments)
-        setFees(data.fees)
-      } catch (e) {
-        if (!cancelled) {
-          setError(e instanceof Error ? e.message : 'Failed to load data')
-        }
-      } finally {
-        if (!cancelled) setLoading(false)
+        setStudents(students)
+        setPayments(payments)
+        setFees(fees)
       }
-    })()
-    return () => { cancelled = true }
-  }, [])
+
+    } catch (e) {
+      if (!cancelled) {
+        setError(e instanceof Error ? e.message : 'Failed to load data')
+      }
+    } finally {
+      if (!cancelled) setLoading(false)
+    }
+  })()
+  return () => { cancelled = true }
+}, [])
 
   const busiestDay = useMemo(() =>
     user && user.role === 'admin' ? null : computeBusiestDay(schedule, user ? `${user.firstName} ${user.lastName}` : ''),
@@ -82,9 +99,6 @@ export default function Page() {
     const id = setInterval(recompute, 60_000)
     return () => clearInterval(id)
   }, [schedule])
-
-  const handleSwitchRole = (role: UserRole) =>
-    setUser((u) => (u ? { ...u, role } : u))
 
   const runMutation = async (fn: () => Promise<void>) => {
     try {
@@ -125,7 +139,7 @@ export default function Page() {
 
   const handlePostAnnouncement = (title: string, body: string) =>
     runMutation(async () => {
-      const created = await api.createAnnouncement(title, body, user?.id)
+      const created = await api.createAnnouncement(title, body)
       setAnnouncements((prev) => [{ ...created, isNew: true }, ...prev])
     })
 
@@ -164,7 +178,7 @@ export default function Page() {
 
   return (
     <div className="flex h-screen overflow-hidden bg-gray-50">
-      <Sidebar activePage={activePage} onNavigate={setActivePage} user={user} onSwitchRole={handleSwitchRole} />
+      <Sidebar activePage={activePage} onNavigate={setActivePage} user={user} />
 
       <main className="flex-1 overflow-y-auto p-5">
         {error && (

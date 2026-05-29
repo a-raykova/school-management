@@ -22,8 +22,7 @@ async function request<T>(url: string, init?: RequestInit): Promise<T> {
 }
 
 export function fetchCurrentUser(email?: string) {
-  const q = email ? `?email=${encodeURIComponent(email)}` : ''
-  return request<CurrentUser>(`/api/users/current${q}`)
+  return request<CurrentUser>('/api/users/current')
 }
 
 export function fetchSchedule() {
@@ -55,15 +54,14 @@ export function addScheduleException(id: number, date: string) {
   })
 }
 
-export function fetchAnnouncements(teacherId?: number) {
-  const q = teacherId ? `?teacherId=${teacherId}` : ''
-  return request<Announcement[]>(`/api/announcements${q}`)
+export function fetchAnnouncements() {
+  return request<Announcement[]>('/api/announcements')
 }
 
-export function createAnnouncement(title: string, body: string, authorId?: number) {
+export function createAnnouncement(title: string, body: string) {
   return request<Announcement>('/api/announcements', {
     method: 'POST',
-    body: JSON.stringify({ title, body, authorId }),
+    body: JSON.stringify({ title, body }),
   })
 }
 
@@ -96,17 +94,4 @@ export function createFee(studentId: number, amount: number, note?: string) {
     method: 'POST',
     body: JSON.stringify({ studentId, amount, note }),
   })
-}
-
-export async function loadDashboardData() {
-  const [user, schedule, announcements, students, payments, fees] =
-    await Promise.all([
-      fetchCurrentUser(),
-      fetchSchedule(),
-      fetchAnnouncements(),
-      fetchStudents(),
-      fetchPayments(),
-      fetchFees(),
-    ])
-  return { user, schedule, announcements, students, payments, fees }
 }
