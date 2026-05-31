@@ -67,6 +67,7 @@ export interface Announcement {
   date: string
   isNew?: boolean
   targetTeacher?: string //if set, only this teacher will see the announcement
+  author?: string
 }
 
 export type PaymentMethod = 'cash' | 'card'

@@ -81,16 +81,34 @@ export async function createCancellationAnnouncement(
   entry: ScheduleEntry,
   dateLabel: string,
   authorId?: number,
+  actorRole?: string,
 ) {
   const teacher = await findTeacherByFullName(entry.teacher)
-  await prisma.announcement.create({
-    data: {
-      title: `Class cancelled: ${entry.subject}`,
-      body: `Your ${entry.subject} class on ${dateLabel} at ${entry.start} (${entry.room}) has been cancelled.`,
-      targetTeacherId: teacher?.id,
-      authorId: authorId ?? null,
-    },
-  })
+
+  if (actorRole === 'ADMIN') {
+    // notify the teacher
+    await prisma.announcement.create({
+      data: {
+        title: `Class cancelled: ${entry.subject}`,
+        body: `Your ${entry.subject} class on ${dateLabel} at ${entry.start} (${entry.room}) has been cancelled.`,
+        targetTeacherId: teacher?.id ?? null,
+        authorId: authorId ?? null,
+      },
+    })
+  } else {
+    // notify all admins only
+    const admins = await prisma.user.findMany({ where: { role: 'ADMIN' } })
+    await Promise.all(admins.map(admin =>
+      prisma.announcement.create({
+        data: {
+          title: `Class cancelled: ${entry.subject}`,
+          body: `${entry.teacher} has cancelled their ${entry.subject} class on ${dateLabel} at ${entry.start} (${entry.room}).`,
+          targetTeacherId: admin.id,
+          authorId: authorId ?? null,
+        },
+      })
+    ))
+  }
 }
 
 export async function createScheduleUpdateAnnouncement(

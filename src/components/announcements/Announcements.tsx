@@ -59,6 +59,15 @@ export default function Announcements({ announcements, onPost, user }: Announcem
                 )}
               </div>
               <p className="text-[12px] text-gray-500 leading-relaxed">{ann.body}</p>
+              {ann.author && (
+                <div className="flex items-center gap-1.5 mt-2">
+                  <span className="text-[11px] text-gray-400">By:</span>
+                  <div className="w-4 h-4 rounded-full bg-blue-100 flex items-center justify-center text-[8px] font-semibold text-blue-600">
+                    {ann.author.charAt(0)}
+                  </div>
+                  <span className="text-[11px] text-blue-600 font-medium">{ann.author}</span>
+                </div>
+              )}
             </div>
           ))}
         </div>

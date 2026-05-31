@@ -3,29 +3,14 @@
 import { useState, useMemo, useEffect } from 'react'
 import { ScheduleEntry, RecurrenceType, CurrentUser } from '@/types'
 import Modal, { ModalFooter } from '@/components/layout/Modal'
-import { ROOMS, TEACHERS, ROOM_COLORS, ALL_DAYS, DAY_SHORT, RECURRENCE_LABELS, inputCls, labelCls } from '@/constants'
+import { ALL_DAYS, DAY_SHORT, RECURRENCE_LABELS, inputCls, labelCls } from '@/constants'
 import { toISO } from '@/utils/date'
-import { getWeekStart, addDays, addWeeks, dateForDayInWeek, entryOccursInWeek } from '@/utils/schedule'
+import { getWeekStart, addDays, addWeeks, dateForDayInWeek, entryOccursInWeek, isSameDay, getMonthTabs } from '@/utils/schedule'
 
 /* ─────────────────────────── constants ─────────────────────────── */
 
 // all schedule constants are moved to /constants/index.ts
 /* ─────────────────────────── helpers ───────────────────────────── */
-
-
-function isSameDay(a: Date, b: Date): boolean {
-  return (
-    a.getFullYear() === b.getFullYear() &&
-    a.getMonth()    === b.getMonth()    &&
-    a.getDate()     === b.getDate()
-  )
-}
-
-function getMonthTabs(today: Date): Date[] {
-  return Array.from({ length: 12 }, (_, i) =>
-    new Date(today.getFullYear(), today.getMonth() + i, 1)
-  )
-}
 
 // helper for locking event edit and remove when 5 minutes before event
 function isEditLocked(entry: ScheduleEntry, today: Date, weekStart: Date, now: Date): boolean {
@@ -39,47 +24,6 @@ function isEditLocked(entry: ScheduleEntry, today: Date, weekStart: Date, now: D
   return now.getTime() >= classStart.getTime() - 5 * 60 * 1000
 }
 
-//helper for not being able to add 2 events in same rooms at overlapping times
-// function hasRoomConflict(
-//   schedule: ScheduleEntry[],
-//   form: typeof blankForm,
-//   weekStart: Date,
-//   editingId?: number,
-// ): ScheduleEntry | null {
-//   const candidate = {
-//     day:        form.day,
-//     start:      form.start,
-//     end:        form.end,
-//     room:       form.room,
-//     recurrence: form.recurrence,
-//     anchorDate: toISO(dateForDayInWeek(weekStart, form.day)),
-//     exceptions: [] as string[],
-//   } as ScheduleEntry
-
-//   const [cs, ce] = [form.start, form.end].map(t => {
-//     const [h, m] = t.split(':').map(Number)
-//     return h * 60 + m
-//   })
-
-//   for (const entry of schedule) {
-//     if (entry.id === editingId)  continue   // skip self when editing
-//     if (entry.room !== form.room) continue  // different room, no conflict
-//     if (entry.day  !== form.day)  continue  // different day, no conflict
-
-//     // check if both occur in the same week (use current weekStart as reference)
-//     if (!entryOccursInWeek(entry, weekStart)) continue
-//     if (!entryOccursInWeek(candidate, weekStart)) continue
-
-//     const [es, ee] = [entry.start, entry.end].map(t => {
-//       const [h, m] = t.split(':').map(Number)
-//       return h * 60 + m
-//     })
-
-//     // overlap: one starts before the other ends
-//     if (cs < ee && ce > es) return entry
-//   }
-//   return null
-// }
 
 function hasRoomConflict(
   schedule: ScheduleEntry[],
@@ -144,6 +88,8 @@ interface ScheduleProps {
   onRemoveOccurrence: (id: number, date: string) => void 
   onEdit:   (entry: ScheduleEntry) => void
   user:     CurrentUser
+  teachers: string[]
+  rooms:    { id: number; name: string; color: string | null }[]
 }
 
 const blankForm = {
@@ -151,14 +97,14 @@ const blankForm = {
   day:        'Monday' as string,
   start:      '09:00',
   end:        '10:30',
-  room:       'Room 1',
+  room:       '',
   teacher:    '',
   recurrence: 'weekly' as RecurrenceType,
 }
 
 /* ─────────────────────────── component ─────────────────────────── */
 
-export default function Schedule({ schedule, onAdd, onRemove, onRemoveOccurrence, onEdit, user }: ScheduleProps) {
+export default function Schedule({ schedule, onAdd, onRemove, onRemoveOccurrence, onEdit, user, teachers, rooms }: ScheduleProps) {
   const today     = useMemo(() => { const d = new Date(); d.setHours(0, 0, 0, 0); return d }, [])
   const monthTabs = useMemo(() => getMonthTabs(today), [today])
 
@@ -186,8 +132,8 @@ export default function Schedule({ schedule, onAdd, onRemove, onRemoveOccurrence
     return !isEditLocked(entry, date, getWeekStart(date), now)
   }
 
-  const usedRooms    = useMemo(() => ROOMS.filter(r => schedule.some(e => e.room === r)),       [schedule])
-  const usedTeachers = useMemo(() => TEACHERS.filter(t => schedule.some(e => e.teacher === t)), [schedule])
+  const usedRooms = useMemo(() => rooms.filter(r => schedule.some(e => e.room === r.name)).map(r => r.name), [schedule, rooms])
+  const usedTeachers = useMemo(() => teachers.filter(t => schedule.some(e => e.teacher === t)), [schedule, teachers])
   const hasActiveFilters = activeRooms.size > 0 || activeTeachers.size > 0
 
   const clearRooms    = () => setActiveRooms(new Set())
@@ -230,7 +176,7 @@ export default function Schedule({ schedule, onAdd, onRemove, onRemoveOccurrence
 
   const openAdd = () => {
     setEditEntry(null)
-    setForm({ ...blankForm, teacher: user.role === 'admin' ? TEACHERS[0] : `${user.firstName} ${user.lastName}` })
+    setForm({ ...blankForm, room: rooms[0]?.name ?? '', teacher: user.role === 'admin' ? teachers[0] : `${user.firstName} ${user.lastName}` })
     setModalOpen(true)
   }
 
@@ -272,7 +218,7 @@ export default function Schedule({ schedule, onAdd, onRemove, onRemoveOccurrence
       duration:   durationH,
       room:       form.room,
       teacher,
-      color:      ROOM_COLORS[form.room] ?? '#3b82f6',
+      color: rooms.find(r => r.name === form.room)?.color ?? '#3b82f6',
       recurrence: form.recurrence,
       anchorDate: editEntry?.anchorDate ?? toISO(dateForDayInWeek(weekStart, form.day)),
     }
@@ -434,14 +380,14 @@ export default function Schedule({ schedule, onAdd, onRemove, onRemoveOccurrence
           <div>
             <label className={labelCls}>Room</label>
             <select value={form.room} onChange={e => { setForm({ ...form, room: e.target.value }); setRoomError(null) }} className={inputCls}>
-              {ROOMS.map(r => <option key={r}>{r}</option>)}
+              {rooms.map(r => <option key={r.name}>{r.name}</option>)}
             </select>
           </div>
           <div>
             <label className={labelCls}>Teacher</label>
             {user.role === 'admin' ? (
               <select value={form.teacher} onChange={e => setForm({ ...form, teacher: e.target.value })} className={inputCls}>
-                {TEACHERS.map(t => <option key={t}>{t}</option>)}
+                {teachers.map(t => <option key={t}>{t}</option>)}
               </select>
             ) : (
               <div className={`${inputCls} bg-gray-50 text-gray-500 cursor-not-allowed`}>
@@ -497,8 +443,8 @@ export default function Schedule({ schedule, onAdd, onRemove, onRemoveOccurrence
                 </>
               ) : (
                 <>
-                  <p className="text-[12px] text-gray-500 mb-4">Remove this class from the schedule?</p>
-                  <div className="flex justify-end gap-2">
+                  <p className="text-[12px] text-gray-500 mb-4">Remove this single class from the schedule?</p>
+                  <div className="flex justify-center gap-2">
                     <button onClick={() => setDeleteConfirm(null)} className="px-3.5 py-1.5 border border-gray-300 rounded-lg text-[12px] text-gray-600 hover:bg-gray-100 transition-colors">Cancel</button>
                     <button onClick={() => confirmDelete(deleteConfirm.id)} className="px-3.5 py-1.5 bg-red-600/80 text-white rounded-lg text-[12px] font-medium hover:bg-red-600 transition-colors">Remove</button>
                   </div>

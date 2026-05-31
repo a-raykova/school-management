@@ -32,6 +32,7 @@ export default function Dashboard({
   const myName  = `${user.firstName} ${user.lastName}`
   const freeCount = rooms.filter((r) => r.free).length
   const latestAnn  = announcements[0]
+  const newToday = announcements.filter(a => a.isNew).length
 
   const greeting  = isAdmin ? 'Good morning, Admin' : `Good morning, ${user.firstName}`
 
@@ -47,7 +48,7 @@ export default function Dashboard({
     { label: isAdmin ? 'School hours this month' : 'My hours this month', value: workedLabel, sub:   plannedLabel,},
     { label: 'Busiest day this week', value: isAdmin ? '—' : (busiestDay?.day ?? 'None'), sub:   isAdmin ? 'Admin account' : (busiestDay ? `${busiestDay.count} ${busiestDay.count === 1 ? 'class' : 'classes'}` : 'No classes this week'),},
     { label: 'Free rooms now', value: String(freeCount), sub: `of ${rooms.length} rooms` },
-    { label: 'Announcements',   value: String(announcements.length), sub: '1 new today' },
+    { label: 'Announcements', value: String(announcements.length), sub: newToday > 0 ? `${newToday} new today` : 'No new today' },
   ]
 
 

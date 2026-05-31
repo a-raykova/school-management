@@ -25,6 +25,20 @@ export function dateForDayInWeek(weekStart: Date, dayName: string): Date {
   return addDays(weekStart, ALL_DAYS.indexOf(dayName))
 }
 
+export function isSameDay(a: Date, b: Date): boolean {
+  return (
+    a.getFullYear() === b.getFullYear() &&
+    a.getMonth()    === b.getMonth()    &&
+    a.getDate()     === b.getDate()
+  )
+}
+
+export function getMonthTabs(today: Date): Date[] {
+  return Array.from({ length: 12 }, (_, i) =>
+    new Date(today.getFullYear(), today.getMonth() + i, 1)
+  )
+}
+
 export function entryOccursInWeek(entry: ScheduleEntry, weekStart: Date): boolean {
   const weekEnd = addDays(weekStart, 6)
   const anchor  = new Date(entry.anchorDate)

@@ -50,7 +50,7 @@ export async function PATCH(request: Request, { params }: RouteContext) {
 
   try {
     const updated = await updateScheduleEntry(entryId, body)
-    await createScheduleUpdateAnnouncement(prev, body)
+    await createScheduleUpdateAnnouncement(prev, body, dbUser.id)
     return jsonOk(updated)
   } catch (e) {
     const message = e instanceof Error ? e.message : 'Failed to update schedule entry'
@@ -80,6 +80,8 @@ export async function DELETE(_request: Request, { params }: RouteContext) {
   await createCancellationAnnouncement(
     entry,
     `${entry.day} (all occurrences)`,
+    dbUser.id,
+    dbUser.role
   )
   await prisma.scheduleEntry.delete({ where: { id: entryId } })
 

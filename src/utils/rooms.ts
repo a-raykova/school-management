@@ -1,6 +1,5 @@
 // utils/rooms.ts
 import { ScheduleEntry, Room } from '@/types'
-import { ROOMS, ROOM_COLORS } from '@/constants'
 
 function getCurrentTimeString(): string {
   const now = new Date()
@@ -11,18 +10,21 @@ function getTodayName(): string {
   return ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'][new Date().getDay()]
 }
 
-export function computeRooms(schedule: ScheduleEntry[]): Room[] {
-  const now     = getCurrentTimeString()
-  const today   = getTodayName()
+export function computeRooms(
+  schedule: ScheduleEntry[],
+  dbRooms: { id: number; name: string; color: string | null }[]
+): Room[] {
+  const now   = getCurrentTimeString()
+  const today = getTodayName()
 
-  return ROOMS.map((name, i) => {
+  return dbRooms.map(room => {
     const activeEntry = schedule.find(
-      e => e.room === name && e.day === today && e.start <= now && e.end > now
+      e => e.room === room.name && e.day === today && e.start <= now && e.end > now
     )
 
     return {
-      id:      i + 1,
-      name,
+      id:      room.id,
+      name:    room.name,
       free:    !activeEntry,
       subject: activeEntry?.subject,
       teacher: activeEntry?.teacher,

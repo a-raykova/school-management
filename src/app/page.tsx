@@ -31,7 +31,9 @@ export default function Page() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
-  const [rooms, setRooms] = useState(() => computeRooms([]))
+  const [rooms, setRooms] = useState(() => computeRooms([], []))
+  const [dbRooms, setDbRooms] = useState<{ id: number; name: string; color: string | null }[]>([])
+  const [teachersList, setTeachersList] = useState<{ id: number; name: string }[]>([])
 
   const [teachers, setTeachers] = useState(() => {
     const today = new Date(); today.setHours(0, 0, 0, 0)
@@ -54,13 +56,17 @@ export default function Page() {
       if (cancelled) return
       setUser(user)
 
-      const [schedule, announcements] = await Promise.all([
+      const [schedule, announcements, teachersList, dbRooms] = await Promise.all([
         api.fetchSchedule(),
         api.fetchAnnouncements(),
+        api.fetchTeachers(),
+        api.fetchRooms(),
       ])
       if (cancelled) return
       setSchedule(schedule)
       setAnnouncements(announcements)
+      setTeachersList(teachersList)
+      setDbRooms(dbRooms)
 
       if (user.role === 'admin') {
         const [students, payments, fees] = await Promise.all([
@@ -91,14 +97,14 @@ export default function Page() {
 
   useEffect(() => {
     const recompute = () => {
-      setRooms(computeRooms(schedule))
+      setRooms(computeRooms(schedule, dbRooms))
       const today = new Date(); today.setHours(0, 0, 0, 0)
       setTeachers(computeTeacherHours(schedule, today.getFullYear(), today.getMonth(), today))
     }
     recompute()
     const id = setInterval(recompute, 60_000)
     return () => clearInterval(id)
-  }, [schedule])
+  }, [schedule, dbRooms])
 
   const runMutation = async (fn: () => Promise<void>) => {
     try {
@@ -206,12 +212,14 @@ export default function Page() {
             onRemoveOccurrence={handleRemoveOccurrence}
             onEdit={handleEditSchedule}
             user={user}
+            teachers={teachersList.map(t => t.name)}
+            rooms={dbRooms}
           />
         )}
         {activePage === 'week'  && (
           <Week schedule={schedule} user={user} />
         )}
-        {activePage === 'hours' && <Hours teachers={teachers} />}
+        {activePage === 'hours' && user.role === 'admin' && <Hours teachers={teachers} />}
         {activePage === 'announcements' && (
           <Announcements announcements={announcements} onPost={handlePostAnnouncement} user={user} />
         )}

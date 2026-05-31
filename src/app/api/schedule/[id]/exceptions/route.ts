@@ -43,7 +43,7 @@ export async function POST(request: Request, { params }: RouteContext) {
     },
   })
 
-  await createCancellationAnnouncement(entry, body.date)
+  await createCancellationAnnouncement(entry, body.date, dbUser.id, dbUser.role)
 
   const updated = await prisma.scheduleEntry.findUnique({
     where: { id: entryId },

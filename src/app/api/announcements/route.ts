@@ -5,6 +5,7 @@ import { requireAuth } from '@/lib/require-auth'
 
 const announcementInclude = {
   targetTeacher: true,
+  author: true,
 } as const
 
 export async function GET(request: Request) {

@@ -133,6 +133,7 @@ type AnnouncementWithTarget = {
   body: string
   publishedAt: Date
   targetTeacher: { firstName: string; lastName: string } | null
+  author: { firstName: string; lastName: string } | null
 }
 
 export function toAnnouncement(row: AnnouncementWithTarget): Announcement {
@@ -143,6 +144,9 @@ export function toAnnouncement(row: AnnouncementWithTarget): Announcement {
     date: formatAnnouncementDate(row.publishedAt),
     targetTeacher: row.targetTeacher
       ? fullName(row.targetTeacher.firstName, row.targetTeacher.lastName)
+      : undefined,
+    author: row.author
+      ? fullName(row.author.firstName, row.author.lastName)
       : undefined,
   }
 }

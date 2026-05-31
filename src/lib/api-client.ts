@@ -29,6 +29,14 @@ export function fetchSchedule() {
   return request<ScheduleEntry[]>('/api/schedule')
 }
 
+export function fetchTeachers() {
+  return request<{ id: number; name: string }[]>('/api/teachers')
+}
+
+export function fetchRooms() {
+  return request<{ id: number; name: string; color: string | null }[]>('/api/rooms')
+}
+
 export function createScheduleEntry(entry: ScheduleCreateInput) {
   return request<ScheduleEntry>('/api/schedule', {
     method: 'POST',
