@@ -443,7 +443,7 @@ export default function Schedule({ schedule, onAdd, onRemove, onRemoveOccurrence
                 </>
               ) : (
                 <>
-                  <p className="text-[12px] text-gray-500 mb-4">Remove this single class from the schedule?</p>
+                  <p className="text-[12px] text-gray-500 mb-4">Remove this single-occuring class from the schedule?</p>
                   <div className="flex justify-center gap-2">
                     <button onClick={() => setDeleteConfirm(null)} className="px-3.5 py-1.5 border border-gray-300 rounded-lg text-[12px] text-gray-600 hover:bg-gray-100 transition-colors">Cancel</button>
                     <button onClick={() => confirmDelete(deleteConfirm.id)} className="px-3.5 py-1.5 bg-red-600/80 text-white rounded-lg text-[12px] font-medium hover:bg-red-600 transition-colors">Remove</button>

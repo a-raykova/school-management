@@ -50,7 +50,7 @@ export async function PATCH(request: Request, { params }: RouteContext) {
 
   try {
     const updated = await updateScheduleEntry(entryId, body)
-    await createScheduleUpdateAnnouncement(prev, body, dbUser.id)
+    await createScheduleUpdateAnnouncement(prev, body, dbUser.id, dbUser.role)
     return jsonOk(updated)
   } catch (e) {
     const message = e instanceof Error ? e.message : 'Failed to update schedule entry'

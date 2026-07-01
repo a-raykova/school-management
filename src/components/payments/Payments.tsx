@@ -23,6 +23,11 @@ function totalPaid(studentId: number, payments: Payment[]) {
 
 const eur = (amount: number) => `${amount}€`;
 
+const METHOD_LABEL: Record<PaymentMethod, string> = {
+  cash: 'Cash',
+  bankTransfer: 'Bank Transfer',
+}
+
 export default function Payments({ students, payments, fees, onLogPayment, onAddFee }: PaymentsProps) {
   const [manageStudent, setManageStudent] = useState<Student | null>(null);
   const [historyStudent, setHistoryStudent] = useState<Student | null>(null);
@@ -98,7 +103,7 @@ export default function Payments({ students, payments, fees, onLogPayment, onAdd
         "Child":            s.childFullName,
         "Parent":           s.parentFullName,
         "Phone":            s.parentPhone,
-        "Payment Method":   s.paymentMethod,
+        "Payment Method":   METHOD_LABEL[s.paymentMethod],
         "Payment Schedule": s.paymentSchedule,
         "Total Owed (€)":   owed,
         "Total Paid (€)":   paid,
@@ -270,7 +275,7 @@ export default function Payments({ students, payments, fees, onLogPayment, onAdd
                       <td className="py-2.5 pr-4 font-medium text-gray-900 whitespace-nowrap">{s.childFullName}</td>
                       <td className="py-2.5 pr-4 text-gray-600 whitespace-nowrap">{s.parentFullName}</td>
                       <td className="py-2.5 pr-4 text-gray-500 whitespace-nowrap">{s.parentPhone}</td>
-                      <td className="py-2.5 pr-4 capitalize text-gray-500">{s.paymentMethod}</td>
+                      <td className="py-2.5 pr-4 capitalize text-gray-500">{METHOD_LABEL[s.paymentMethod]}</td>
                       <td className="py-2.5 pr-4 capitalize text-gray-500">{s.paymentSchedule}</td>
                       <td className="py-2.5 pr-4 whitespace-nowrap">
                         {noFeesYet ? (
@@ -414,7 +419,7 @@ export default function Payments({ students, payments, fees, onLogPayment, onAdd
                                 <span className="px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-700 text-[11px] font-medium">Payment</span>
                               </td>
                               <td className="py-2 pr-4 text-emerald-700 font-medium whitespace-nowrap">
-                                {eur(p.amount)}<span className="text-gray-400 font-normal capitalize ml-1">· {p.method}</span>
+                                {eur(p.amount)}<span className="text-gray-400 font-normal capitalize ml-1">· {METHOD_LABEL[p.method]}</span>
                               </td>
                               <td className="py-2 pr-4 text-gray-400">{p.note ?? "—"}</td>
                             </tr>

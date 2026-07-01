@@ -80,15 +80,10 @@ export const initialAnnouncements: Announcement[] = [
 
 export const mockStudents: Student[] = [
   { id: 1, parentFullName: 'Иван Иванов',       parentPhone: '0888 123 456', childFullName: 'Maria Ivanova Petrova',    paymentMethod: 'cash', paymentSchedule: 'split', },
-  { id: 2, parentFullName: 'Georgi Georgiev Dimitrov', parentPhone: '0877 234 567', childFullName: 'Petar Georgiev Dimitrov',  paymentMethod: 'card', paymentSchedule: 'full', },
+  { id: 2, parentFullName: 'Georgi Georgiev Dimitrov', parentPhone: '0877 234 567', childFullName: 'Petar Georgiev Dimitrov',  paymentMethod: 'bankTransfer', paymentSchedule: 'full', },
   { id: 3, parentFullName: 'Elena Todorova Stoyanova', parentPhone: '0899 345 678', childFullName: 'Sofia Todorova Stoyanova', paymentMethod: 'cash', paymentSchedule: 'split',},
-  { id: 4, parentFullName: 'Dimitar Kolev Angelov',    parentPhone: '0866 456 789', childFullName: 'Nikola Kolev Angelov',     paymentMethod: 'card', paymentSchedule: 'full', },
+  { id: 4, parentFullName: 'Dimitar Kolev Angelov',    parentPhone: '0866 456 789', childFullName: 'Nikola Kolev Angelov',     paymentMethod: 'bankTransfer', paymentSchedule: 'full', },
 ]
-
-// export const mockPayments: Payment[] = [
-//   { id: 1, studentId: 1, amount: 0, date: '2026-04-01', method: 'cash' },
-//   { id: 2, studentId: 2, amount: 0, date: '2026-04-03', method: 'card' },
-// ]
 
 export const mockFees: Fee[] = []
 export const mockPayments: Payment[] = []

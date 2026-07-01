@@ -14,10 +14,8 @@ import Hours         from '@/components/hours/Hours'
 import Announcements from '@/components/announcements/Announcements'
 import Payments from '@/components/payments/Payments'
 import Profile         from '@/components/profile/Profile'
-import Settings        from '@/components/settings/Settings'
 
 import { computeRooms } from '@/utils/rooms'
-import { computeTeacherHours }  from '@/utils/hours'
 import { computeBusiestDay } from '@/utils/dashboard'
 
 export default function Page() {
@@ -34,11 +32,6 @@ export default function Page() {
   const [rooms, setRooms] = useState(() => computeRooms([], []))
   const [dbRooms, setDbRooms] = useState<{ id: number; name: string; color: string | null }[]>([])
   const [teachersList, setTeachersList] = useState<{ id: number; name: string }[]>([])
-
-  const [teachers, setTeachers] = useState(() => {
-    const today = new Date(); today.setHours(0, 0, 0, 0)
-    return computeTeacherHours([], today.getFullYear(), today.getMonth(), today)
-  })
 
   const refreshAnnouncements = useCallback(async () => {
     const data = await api.fetchAnnouncements()
@@ -96,15 +89,11 @@ export default function Page() {
   [schedule, user])
 
   useEffect(() => {
-    const recompute = () => {
-      setRooms(computeRooms(schedule, dbRooms))
-      const today = new Date(); today.setHours(0, 0, 0, 0)
-      setTeachers(computeTeacherHours(schedule, today.getFullYear(), today.getMonth(), today))
-    }
-    recompute()
-    const id = setInterval(recompute, 60_000)
-    return () => clearInterval(id)
-  }, [schedule, dbRooms])
+  const recompute = () => setRooms(computeRooms(schedule, dbRooms))
+  recompute()
+  const id = setInterval(recompute, 60_000)
+  return () => clearInterval(id)
+}, [schedule, dbRooms])
 
   const runMutation = async (fn: () => Promise<void>) => {
     try {
@@ -198,7 +187,6 @@ export default function Page() {
             announcements={announcements}
             onNavigate={setActivePage}
             user={user}
-            teacherHours={teachers}
             busiestDay={busiestDay}
             schedule={schedule} 
           />
@@ -219,7 +207,7 @@ export default function Page() {
         {activePage === 'week'  && (
           <Week schedule={schedule} user={user} />
         )}
-        {activePage === 'hours' && user.role === 'admin' && <Hours teachers={teachers} />}
+        {activePage === 'hours' && user.role === 'admin' && <Hours schedule={schedule} />}
         {activePage === 'announcements' && (
           <Announcements announcements={announcements} onPost={handlePostAnnouncement} user={user} />
         )}
@@ -227,7 +215,6 @@ export default function Page() {
           <Payments students={students} payments={payments} fees={fees} onLogPayment={handleLogPayment} onAddFee={handleAddFee} />
         )}
         {activePage === 'profile'  && <Profile user={user} />}
-        {activePage === 'settings' && <Settings />}
       </main>
     </div>
   )

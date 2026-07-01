@@ -2,7 +2,7 @@ export type UserRole = 'admin' | 'teacher'
 
 export interface CurrentUser {
   id: number
-  role: UserRole
+  role: UserRole  // 'admin' | 'teacher'
   firstName: string
   lastName: string
   email: string
@@ -18,8 +18,7 @@ export type NavPage =
   | 'hours'
   | 'payments'    
   | 'announcements'
-  | 'profile'    
-  | 'settings'  
+  | 'profile' 
 
 export interface Room {
   id: number
@@ -70,7 +69,7 @@ export interface Announcement {
   author?: string
 }
 
-export type PaymentMethod = 'cash' | 'card'
+export type PaymentMethod = 'cash' | 'bankTransfer'
 export type PaymentSchedule = 'full' | 'split' // split = two parts
 
 export interface Student {

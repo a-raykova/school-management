@@ -1,18 +1,18 @@
 'use client'
 
-import { NavPage, Room, Announcement, CurrentUser, TeacherHours } from '@/types'
+import { NavPage, Room, Announcement, CurrentUser } from '@/types'
 import Card, { CardHeader } from '@/components/layout/Card'
 import Badge from '@/components/layout/Badge'
 import { ScheduleEntry } from '@/types'
 import { getWeekStart, addDays, entryOccursInWeek } from '@/utils/schedule'
 import { ALL_DAYS, DAY_SHORT } from '@/constants'
+import { computeTeacherHours } from '@/utils/hours'
 
 interface DashboardProps {
   rooms: Room[]
   announcements: Announcement[]
   onNavigate: (page: NavPage) => void
   user: CurrentUser
-  teacherHours: TeacherHours[]
   busiestDay: { day: string; count: number } | null
   schedule: ScheduleEntry[]
   // for schedule + date context
@@ -24,12 +24,13 @@ export default function Dashboard({
   announcements,
   onNavigate,
   user,
-  teacherHours,
   busiestDay,
   schedule
 }: DashboardProps) {
   const isAdmin   = user.role === 'admin'
   const myName  = `${user.firstName} ${user.lastName}`
+  const today = new Date(); today.setHours(0, 0, 0, 0)
+  const teacherHours = computeTeacherHours(schedule, today.getFullYear(), today.getMonth(), today)
   const freeCount = rooms.filter((r) => r.free).length
   const latestAnn  = announcements[0]
   const newToday = announcements.filter(a => a.isNew).length
@@ -51,8 +52,6 @@ export default function Dashboard({
     { label: 'Announcements', value: String(announcements.length), sub: newToday > 0 ? `${newToday} new today` : 'No new today' },
   ]
 
-
-  const today = new Date()
   const dateLabel = today.toLocaleDateString('en-GB', {
     weekday: 'long',
     day: 'numeric',

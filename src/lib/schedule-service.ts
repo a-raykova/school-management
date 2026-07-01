@@ -90,7 +90,7 @@ export async function createCancellationAnnouncement(
     await prisma.announcement.create({
       data: {
         title: `Class cancelled: ${entry.subject}`,
-        body: `Your ${entry.subject} class on ${dateLabel} at ${entry.start} (${entry.room}) has been cancelled.`,
+        body: `${entry.teacher}'s ${entry.subject} class on ${dateLabel} at ${entry.start} (${entry.room}) has been cancelled.`,
         targetTeacherId: teacher?.id ?? null,
         authorId: authorId ?? null,
       },
@@ -115,6 +115,7 @@ export async function createScheduleUpdateAnnouncement(
   prev: ScheduleEntry,
   updated: ScheduleCreateInput,
   authorId?: number,
+  actorRole?: string,
 ) {
   const changes: string[] = []
   if (prev.day !== updated.day) {
@@ -132,10 +133,14 @@ export async function createScheduleUpdateAnnouncement(
   if (changes.length === 0) return
 
   const teacher = await findTeacherByFullName(updated.teacher)
+  const body = actorRole === 'ADMIN'
+    ? `${updated.teacher}'s ${updated.subject} class has been updated — ${changes.join(', ')}.`
+    : `Your ${updated.subject} class has been updated — ${changes.join(', ')}.`
+
   await prisma.announcement.create({
     data: {
       title: `Schedule update: ${updated.subject}`,
-      body: `Your ${updated.subject} class has been updated — ${changes.join(', ')}.`,
+      body,
       targetTeacherId: teacher?.id,
       authorId: authorId ?? null,
     },

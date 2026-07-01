@@ -42,6 +42,6 @@ export async function middleware(request: NextRequest) {
 export const config = {
   matcher: [
     //we exclude images so that they are served directly without going through the auth check
-    '/((?!_next/static|_next/image|favicon.ico|sign-in|.*\\.(?:png|svg|jpg|jpeg|gif|webp|ico|css|js)$).*)',
+    '/((?!_next/static|_next/image|favicon.ico|sign-in|api/webhooks/.*|.*\\.(?:png|svg|jpg|jpeg|gif|webp|ico|css|js)$).*)',
   ],
 }

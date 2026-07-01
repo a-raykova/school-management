@@ -4,9 +4,21 @@ import {
   RecurrenceType,
   PaymentMethod,
   PaymentSchedule,
+  Room,
+  User,
 } from '../src/generated/prisma/client'
-import { ROOMS, ROOM_COLORS, TEACHERS } from '../src/constants'
 import { prisma } from '../src/lib/prisma'
+
+//seed data — previously imported from ../src/constants
+const ROOMS = ['Room 1', 'Room 3', 'Room 5'] as const
+
+const ROOM_COLORS: Record<string, string> = {
+  'Room 1': '#f59e0b',
+  'Room 3': '#22c55e',
+  'Room 5': '#f43f5e',
+}
+
+const TEACHERS = ['Anna Koeva', 'Martina Ivanova'] as const
 
 const UI_DAY_TO_WEEKDAY: Record<string, Weekday> = {
   Monday: Weekday.MONDAY,
@@ -50,10 +62,10 @@ async function main() {
     })),
   })
 
-  const rooms = await prisma.room.findMany()
-  const roomByName = Object.fromEntries(rooms.map((r) => [r.name, r]))
+  const rooms: Room[] = await prisma.room.findMany()
+  const roomByName: Record<string, Room> = Object.fromEntries(rooms.map((r) => [r.name, r]))
 
-  const teacherUsers = await Promise.all(
+  const teacherUsers: User[] = await Promise.all(
     TEACHERS.map((fullName) => {
       const { firstName, lastName } = parseFullName(fullName)
       const isAnna = fullName === 'Anna Koeva'
@@ -69,11 +81,11 @@ async function main() {
     }),
   )
 
-  const teacherByFullName = Object.fromEntries(
+  const teacherByFullName: Record<string, User> = Object.fromEntries(
     teacherUsers.map((u) => [`${u.firstName} ${u.lastName}`, u]),
   )
 
-  const admin = await prisma.user.create({
+  const admin: User = await prisma.user.create({
     data: {
       role: UserRole.ADMIN,
       firstName: 'Admin',
@@ -190,7 +202,7 @@ async function main() {
         parentFullName: 'Georgi Georgiev Dimitrov',
         parentPhone: '0877 234 567',
         childFullName: 'Petar Georgiev Dimitrov',
-        paymentMethod: PaymentMethod.CARD,
+        paymentMethod: PaymentMethod.BANK_TRANSFER,
         paymentSchedule: PaymentSchedule.FULL,
       },
       {
@@ -204,7 +216,7 @@ async function main() {
         parentFullName: 'Dimitar Kolev Angelov',
         parentPhone: '0866 456 789',
         childFullName: 'Nikola Kolev Angelov',
-        paymentMethod: PaymentMethod.CARD,
+        paymentMethod: PaymentMethod.BANK_TRANSFER,
         paymentSchedule: PaymentSchedule.FULL,
       },
     ],

@@ -48,12 +48,12 @@ export const UI_RECURRENCE_TO_PRISMA: Record<RecurrenceType, PrismaRecurrence> =
 
 const PAYMENT_METHOD_TO_UI: Record<PrismaPaymentMethod, PaymentMethod> = {
   CASH: 'cash',
-  CARD: 'card',
+  BANK_TRANSFER: 'bankTransfer',
 }
 
 export const UI_PAYMENT_METHOD_TO_PRISMA: Record<PaymentMethod, PrismaPaymentMethod> = {
   cash: 'CASH',
-  card: 'CARD',
+  bankTransfer: 'BANK_TRANSFER',
 }
 
 const PAYMENT_SCHEDULE_TO_UI: Record<PrismaPaymentSchedule, PaymentSchedule> = {

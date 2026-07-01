@@ -33,19 +33,18 @@ export default function Sidebar({ activePage, onNavigate, user }: SidebarProps) 
 
   return (
     <aside className="w-[52px] sm:w-[200px] min-w-[52px] sm:min-w-[200px] bg-white border-r border-gray-100 flex flex-col h-full transition-all">
-
+ 
       {/* Logo */}
       <div className="px-3 sm:px-4 py-5 border-b border-gray-100 overflow-hidden">
         <div className="text-[15px] font-medium text-gray-900 hidden sm:block">ИнтелектИ</div>
         <div className="text-[11px] text-gray-400 mt-0.5 hidden sm:block">{portalLabel}</div>
-        {/* mobile: just a dot/initial */}
         <div className="sm:hidden flex items-center justify-center">
           <div className="w-7 h-7 rounded-full bg-blue-50 flex items-center justify-center text-[11px] font-medium text-blue-700">
             И
           </div>
         </div>
       </div>
-
+ 
       {/* Navigation */}
       <nav className="flex-1 py-2 overflow-y-auto">
         {navItems
@@ -76,31 +75,23 @@ export default function Sidebar({ activePage, onNavigate, user }: SidebarProps) 
               <span className="hidden sm:block">{item.label}</span>
             </button>
           ))}
-
+ 
         {/* Other section */}
         <div className="mt-4 px-0 sm:px-4">
           <div className="text-[10px] font-medium text-slate-400 uppercase tracking-wider mb-2 hidden sm:block">Other</div>
           <div className="space-y-0.5">
-            {(['profile', 'settings'] as NavPage[]).map(page => (
-              <button
-                key={page}
-                type="button"
-                onClick={() => onNavigate(page)}
-                title={page.charAt(0).toUpperCase() + page.slice(1)}
-                className={`w-full flex items-center justify-center sm:justify-start gap-2.5 py-[9px] sm:px-0 text-[13px] transition-colors text-left rounded-lg ${
-                  activePage === page ? 'bg-blue-50 text-blue-700 font-medium' : 'text-gray-500 hover:bg-gray-50 hover:text-gray-800'
-                }`}
-              >
-                {page === 'profile'
-                  ? <Image src="/profile.png" alt="" width={18} height={18} className="shrink-0 opacity-60" />
-                  : <Image src="/setting.png" alt="" width={18} height={18} className="shrink-0 opacity-60" />
-                }
-                <span className="hidden sm:block">
-                  {page.charAt(0).toUpperCase() + page.slice(1)}
-                </span>
-              </button>
-            ))}
-
+            <button
+              type="button"
+              onClick={() => onNavigate('profile')}
+              title="Profile"
+              className={`w-full flex items-center justify-center sm:justify-start gap-2.5 py-[9px] sm:px-0 text-[13px] transition-colors text-left rounded-lg ${
+                activePage === 'profile' ? 'bg-blue-50 text-blue-700 font-medium' : 'text-gray-500 hover:bg-gray-50 hover:text-gray-800'
+              }`}
+            >
+              <Image src="/profile.png" alt="" width={18} height={18} className="shrink-0 opacity-60" />
+              <span className="hidden sm:block">Profile</span>
+            </button>
+ 
             {/* Sign out */}
             <button
               type="button"
@@ -129,7 +120,7 @@ export default function Sidebar({ activePage, onNavigate, user }: SidebarProps) 
           </div>
         </div>
       </nav>
-
+ 
       {/* User info */}
       <div className="px-2 sm:px-4 py-3 border-t border-gray-100 mt-auto">
         <div className="flex items-center justify-center sm:justify-start gap-2">

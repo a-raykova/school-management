@@ -1,11 +1,9 @@
-import { useMemo } from 'react'
-import { ScheduleEntry, TeacherHours } from '@/types'
+'use client'
+
+import { useState } from 'react'
+import { ScheduleEntry } from '@/types'
 import Card, { CardHeader } from '@/components/layout/Card'
 import { computeTeacherHours } from '@/utils/hours'
-
-/* ─────────────────────────── date helpers (mirror of Schedule.tsx) ── */
-
-//moved to schedule.ts 
 
 /* ─────────────────────────── sub-components ────────────────────── */
 
@@ -88,59 +86,72 @@ function Legend() {
 /* ─────────────────────────── main component ────────────────────── */
 
 interface HoursProps {
-  teachers: TeacherHours[]
-  year?:    number
-  month?:   number
+  schedule: ScheduleEntry[]
 }
 
-export default function Hours({ teachers, year: yearProp, month: monthProp }: HoursProps) {
+export default function Hours({ schedule }: HoursProps) {
   const today = new Date(); today.setHours(0, 0, 0, 0)
 
-  const year  = yearProp  ?? today.getFullYear()
-  const month = monthProp ?? today.getMonth()
+  const months = [-2, -1, 0].map(offset => {
+    const d = new Date(today.getFullYear(), today.getMonth() + offset, 1)
+    return {
+      year:  d.getFullYear(),
+      month: d.getMonth(),
+      label: d.toLocaleDateString('en-GB', { month: 'long' }),
+    }
+  })
 
-  const monthStart = new Date(year, month, 1)
-  // Is the selected month in the past/future (fully worked)?
-  const monthEnd   = new Date(year, month + 1, 0)
+  const [selected, setSelected] = useState(months[2])
+
+  const teachers   = computeTeacherHours(schedule, selected.year, selected.month, today)
+  const monthStart = new Date(selected.year, selected.month, 1)
+  const monthEnd   = new Date(selected.year, selected.month + 1, 0)
   const isFuture   = monthStart > today
-  const isPast     = monthEnd   < today
+  const isPast     = monthEnd < today
   const isOngoing  = !isFuture && !isPast
+  const monthLabel = new Date(selected.year, selected.month, 1).toLocaleDateString('en-GB', { month: 'long', year: 'numeric' })
 
-  const monthLabel = new Date(year, month, 1).toLocaleDateString('en-GB', { month: 'long', year: 'numeric' })
-
-  const totalWorked  = teachers.reduce((s, t) => s + t.workedHours,  0)
+  const totalWorked  = teachers.reduce((s, t) => s + t.workedHours, 0)
   const totalPlanned = teachers.reduce((s, t) => s + t.plannedHours, 0)
   const topTeacher   = teachers[0]
   const maxHours     = Math.max(teachers.reduce((m, t) => Math.max(m, t.workedHours + t.plannedHours), 0), 1)
 
   return (
     <div>
-      <h1 className="text-[18px] font-medium text-gray-900 mb-4">
-        Teaching hours — {monthLabel}
-      </h1>
+      {/* header + month tabs */}
+      <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
+        <h1 className="text-[18px] font-medium text-gray-900">Teaching hours — {monthLabel}</h1>
+        <div className="flex gap-2">
+          {months.map(m => (
+            <button
+              key={`${m.year}-${m.month}`}
+              onClick={() => setSelected(m)}
+              className={`px-4 py-1.5 rounded-lg text-[12px] font-medium transition-colors ${
+                selected.month === m.month && selected.year === m.year
+                  ? 'bg-blue-600 text-white'
+                  : 'border border-gray-200 text-gray-500 hover:bg-gray-50'
+              }`}
+            >
+              {m.label}
+            </button>
+          ))}
+        </div>
+      </div>
 
-      {/* ── future month guard ── */}
+      {/* future month guard */}
       {isFuture ? (
         <div className="flex items-center gap-2 px-4 py-3 rounded-xl bg-gray-50 border border-gray-200 text-[13px] text-gray-500">
-          📅 Hours for a future month arent shown — theyll appear as the month begins.
+          📅 Hours for a future month are not shown — they will appear as the month begins.
         </div>
       ) : (
         <>
-          {/* ── summary cards ── */}
+          {/* summary cards */}
           <div className="grid grid-cols-3 gap-2.5 mb-4">
-            <SummaryCard
-              label="Active teachers"
-              sub="Teaching this month"
-            >
-              <div className="text-[22px] font-medium text-blue-600">
-                {teachers.length}
-              </div>
+            <SummaryCard label="Active teachers" sub="Teaching this month">
+              <div className="text-[22px] font-medium text-blue-600">{teachers.length}</div>
             </SummaryCard>
 
-            <SummaryCard
-              label="School total"
-              sub="All teachers"
-            >
+            <SummaryCard label="School total" sub="All teachers">
               <div className="text-[22px] font-medium text-gray-900">
                 {Math.round((totalWorked + totalPlanned) * 10) / 10} h
               </div>
@@ -163,21 +174,15 @@ export default function Hours({ teachers, year: yearProp, month: monthProp }: Ho
             </SummaryCard>
           </div>
 
-          {/* ── bar chart ── */}
+          {/* bar chart */}
           <Card>
             <CardHeader
               title="All teachers"
-              action={
-                <div className="flex items-center gap-4">
-                  {isOngoing && <Legend />}
-                </div>
-              }
+              action={isOngoing ? <Legend /> : undefined}
             />
 
             {teachers.length === 0 ? (
-              <p className="text-[12px] text-gray-400 italic">
-                No classes scheduled this month.
-              </p>
+              <p className="text-[12px] text-gray-400 italic">No classes scheduled this month.</p>
             ) : (
               <div className="space-y-2.5">
                 {teachers.map((t) => {
@@ -188,7 +193,8 @@ export default function Hours({ teachers, year: yearProp, month: monthProp }: Ho
 
                       {isPast ? (
                         <div className="flex-1 bg-gray-100 rounded h-2 overflow-hidden">
-                          <div className="h-full rounded transition-all bg-blue-500"
+                          <div
+                            className="h-full rounded transition-all bg-blue-500"
                             style={{ width: `${(total / maxHours) * 100}%` }}
                           />
                         </div>
@@ -199,7 +205,7 @@ export default function Hours({ teachers, year: yearProp, month: monthProp }: Ho
                           maxHours={maxHours}
                         />
                       )}
-
+                      
                       <div className="text-[12px] text-gray-400 min-w-[80px] text-right">
                         {isPast ? (
                           `${total} h`
