@@ -1,4 +1,4 @@
-# School Management Dashboard
+# School Management System
 
 A Next.js web app for running the day-to-day admin of a small school or tutoring center: class scheduling, room availability, teacher hours, announcements, and student payments — with separate views for **admins** and **teachers**.
 
