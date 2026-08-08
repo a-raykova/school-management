@@ -47,12 +47,12 @@ export interface ScheduleEntry {
   exceptions?: string[]
 }
 
-export interface ClassEvent {
-  time: string
-  title: string
-  meta: string
-  soon?: boolean
-}
+// export interface ClassEvent {
+//   time: string
+//   title: string
+//   meta: string
+//   soon?: boolean
+// }
 
 // export interface Teacher {
 //   name: string

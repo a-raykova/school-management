@@ -1,28 +1,26 @@
 'use client'
 
-import { NavPage, Room, Announcement, CurrentUser } from '@/types'
+import Link from 'next/link'
+import { Room, Announcement, CurrentUser } from '@/types'
+import { ROUTES } from '@/constants/routes'
 import Card, { CardHeader } from '@/components/layout/Card'
 import Badge from '@/components/layout/Badge'
 import { ScheduleEntry } from '@/types'
-import { getWeekStart, addDays, entryOccursInWeek } from '@/utils/schedule'
-import { ALL_DAYS, DAY_SHORT } from '@/constants'
+import { getWeekStart, entryOccursInWeek } from '@/utils/schedule'
+import { ALL_DAYS } from '@/constants'
 import { computeTeacherHours } from '@/utils/hours'
 
 interface DashboardProps {
   rooms: Room[]
   announcements: Announcement[]
-  onNavigate: (page: NavPage) => void
   user: CurrentUser
   busiestDay: { day: string; count: number } | null
   schedule: ScheduleEntry[]
-  // for schedule + date context
-  // schedule: ScheduleEntry[] 
 }
 
 export default function Dashboard({
   rooms,
   announcements,
-  onNavigate,
   user,
   busiestDay,
   schedule
@@ -85,12 +83,12 @@ export default function Dashboard({
             title="Today's classes"
             action={
               user.role !== 'admin' && (
-                <button
-                  onClick={() => onNavigate('week')}
+                <Link
+                  href={ROUTES.week}
                   className="text-[11px] px-2.5 py-1 border border-gray-200 rounded-lg text-gray-500 hover:bg-gray-50 transition-colors"
                 >
                   My week
-                </button>
+                </Link>
               )
             }
           />
@@ -106,19 +104,19 @@ export default function Dashboard({
           <CardHeader
             title="Quick room availability"
             action={
-              <button
-                onClick={() => onNavigate('rooms')}
+              <Link
+                href={ROUTES.rooms}
                 className="text-[11px] px-2.5 py-1 border border-gray-200 rounded-lg text-gray-500 hover:bg-gray-50 transition-colors"
               >
                 All rooms
-              </button>
+              </Link>
             }
           />
           <div className="flex flex-wrap gap-2 mb-3">
             {rooms.map((room) => (
-              <button
+              <Link
                 key={room.id}
-                onClick={() => onNavigate('rooms')}
+                href={ROUTES.rooms}
                 className={`px-3.5 py-1.5 rounded-full text-[12px] font-medium transition-colors ${
                   room.free
                     ? 'bg-emerald-50 text-emerald-800 hover:bg-emerald-100'
@@ -126,7 +124,7 @@ export default function Dashboard({
                 }`}
               >
                 {room.name}
-              </button>
+              </Link>
             ))}
           </div>
           <p className="text-[11px] text-gray-400">As of now · tap a room for details</p>
@@ -139,12 +137,12 @@ export default function Dashboard({
           <CardHeader
             title="Latest announcement"
             action={
-              <button
-                onClick={() => onNavigate('announcements')}
+              <Link
+                href={ROUTES.announcements}
                 className="text-[11px] px-2.5 py-1 border border-gray-200 rounded-lg text-gray-500 hover:bg-gray-50 transition-colors"
               >
                 All
-              </button>
+              </Link>
             }
           />
           <div className="flex items-start justify-between gap-3">

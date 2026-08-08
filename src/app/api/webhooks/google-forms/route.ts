@@ -2,8 +2,7 @@ import { prisma } from '@/lib/prisma'
 import { jsonError, jsonOk, parseJsonBody } from '@/lib/api-response'
 import type { PaymentMethod, PaymentSchedule } from '@/generated/prisma/client'
 
-// The Google Form sends free-text labels
-// so we need to normalise them into the exact enum values the database accepts
+//The Google Form sends free-text labels so we need to normalise them into the exact enum values the database accepts
 //unrecognised things fall back to the safe defaults (CASH / FULL)
 function toPaymentMethod(value: string | undefined): PaymentMethod {
   const normalized = (value ?? '').toLowerCase().replace(/[\s_-]/g, '')

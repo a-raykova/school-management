@@ -18,3 +18,13 @@ export const scheduleInclude = {
   room: true,
   exceptions: true,
 } as const
+
+//връща null ако няма преподавател с роля TEACHER
+export async function findTeacherById(teacherId: number) {
+  if (!Number.isInteger(teacherId) || teacherId <= 0) return null;
+ 
+  return prisma.user.findFirst({
+    where: { id: teacherId, role: "TEACHER" },
+  });
+}
+

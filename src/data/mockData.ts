@@ -1,15 +1,15 @@
 import { CurrentUser, Room, ScheduleEntry, ClassEvent, TeacherHours, Announcement, Student, Fee, Payment} from '@/types'
 
 /** Logged-in profile for the UI (switch in Sidebar for demo). */
-export const currentUser: CurrentUser = {
-  id: 1,
-  role: 'teacher',
-  firstName: 'Anna',
-  lastName: 'Koeva',
-  email: 'a.koeva@intelekti.com',
-  initials: 'AK',
-  subtitle: 'English Dept.',
-}
+// export const currentUser: CurrentUser = {
+//   id: 1,
+//   role: 'teacher',
+//   firstName: 'Anna',
+//   lastName: 'Koeva',
+//   email: 'a.koeva@intelekti.com',
+//   initials: 'AK',
+//   subtitle: 'English Dept.',
+// }
 
 // export const rooms: Room[] = [
 //   { id: 1, name: 'Room 1', free: false, subject: 'English A1 – Beginners', teacher: 'A. Koeva', time: '09:00–10:30' },
@@ -29,12 +29,12 @@ export const currentUser: CurrentUser = {
 //   { id: 5, name: 'Room 5' },
 // ]
 
-export const initialSchedule: ScheduleEntry[] = [
-  { id: 1, subject: 'Advanced English B2', day: 'Monday',    start: '09:00', end: '10:30', duration: 1.5, room: 'Room 3', teacher: 'Anna Koeva',   color: '#22c55e', recurrence: 'weekly', anchorDate: '2026-04-13' },
-  { id: 2, subject: 'Business English',     day: 'Monday',    start: '11:00', end: '12:00', duration: 1,   room: 'Room 5', teacher: 'Martina Ivanova', color: '#f43f5e', recurrence: 'weekly', anchorDate: '2026-04-13' },
-  { id: 3, subject: 'English Beginners A1', day: 'Wednesday', start: '14:00', end: '15:30', duration: 1.5, room: 'Room 1', teacher: 'Anna Koeva',   color: '#f59e0b', recurrence: 'weekly', anchorDate: '2026-04-15' },
-  { id: 4, subject: 'Advanced English B2',  day: 'Friday',    start: '10:00', end: '11:30', duration: 1.5, room: 'Room 3', teacher: 'Anna Koeva',   color: '#22c55e', recurrence: 'weekly', anchorDate: '2026-04-17' },
-]
+// export const initialSchedule: ScheduleEntry[] = [
+//   { id: 1, subject: 'Advanced English B2', day: 'Monday',    start: '09:00', end: '10:30', duration: 1.5, room: 'Room 3', teacher: 'Anna Koeva',   color: '#22c55e', recurrence: 'weekly', anchorDate: '2026-04-13' },
+//   { id: 2, subject: 'Business English',     day: 'Monday',    start: '11:00', end: '12:00', duration: 1,   room: 'Room 5', teacher: 'Martina Ivanova', color: '#f43f5e', recurrence: 'weekly', anchorDate: '2026-04-13' },
+//   { id: 3, subject: 'English Beginners A1', day: 'Wednesday', start: '14:00', end: '15:30', duration: 1.5, room: 'Room 1', teacher: 'Anna Koeva',   color: '#f59e0b', recurrence: 'weekly', anchorDate: '2026-04-15' },
+//   { id: 4, subject: 'Advanced English B2',  day: 'Friday',    start: '10:00', end: '11:30', duration: 1.5, room: 'Room 3', teacher: 'Anna Koeva',   color: '#22c55e', recurrence: 'weekly', anchorDate: '2026-04-17' },
+// ]
 
 // export const todayEvents: ClassEvent[] = [
 //   { time: '11:00–12:30', title: 'Advanced English B2', meta: 'Room 3 · 12 students', soon: true },
@@ -55,35 +55,35 @@ export const initialSchedule: ScheduleEntry[] = [
 //   { name: 'E. Dimitrova', hours: 28 },
 // ]
 
-export const initialAnnouncements: Announcement[] = [
-  {
-    id: 1,
-    title: 'End-of-term schedule changes',
-    body: 'The last week of term (18–22 May) all afternoon slots are moved 30 minutes earlier. Please update your schedules accordingly.',
-    date: 'Today',
-    isNew: true,
-  },
-  {
-    id: 2,
-    title: 'New student intake — May cohort',
-    body: 'We expect 40 new students in the May cohort. Room assignments will be updated by Friday.',
-    date: '7 Apr',
-  },
-  {
-    id: 3,
-    title: 'Staff meeting reminder',
-    body: 'Monthly staff meeting this Thursday at 16:00 in the conference room.',
-    date: '5 Apr',
-  },
-]
+// export const initialAnnouncements: Announcement[] = [
+//   {
+//     id: 1,
+//     title: 'End-of-term schedule changes',
+//     body: 'The last week of term (18–22 May) all afternoon slots are moved 30 minutes earlier. Please update your schedules accordingly.',
+//     date: 'Today',
+//     isNew: true,
+//   },
+//   {
+//     id: 2,
+//     title: 'New student intake — May cohort',
+//     body: 'We expect 40 new students in the May cohort. Room assignments will be updated by Friday.',
+//     date: '7 Apr',
+//   },
+//   {
+//     id: 3,
+//     title: 'Staff meeting reminder',
+//     body: 'Monthly staff meeting this Thursday at 16:00 in the conference room.',
+//     date: '5 Apr',
+//   },
+// ]
 
 
-export const mockStudents: Student[] = [
-  { id: 1, parentFullName: 'Иван Иванов',       parentPhone: '0888 123 456', childFullName: 'Maria Ivanova Petrova',    paymentMethod: 'cash', paymentSchedule: 'split', },
-  { id: 2, parentFullName: 'Georgi Georgiev Dimitrov', parentPhone: '0877 234 567', childFullName: 'Petar Georgiev Dimitrov',  paymentMethod: 'bankTransfer', paymentSchedule: 'full', },
-  { id: 3, parentFullName: 'Elena Todorova Stoyanova', parentPhone: '0899 345 678', childFullName: 'Sofia Todorova Stoyanova', paymentMethod: 'cash', paymentSchedule: 'split',},
-  { id: 4, parentFullName: 'Dimitar Kolev Angelov',    parentPhone: '0866 456 789', childFullName: 'Nikola Kolev Angelov',     paymentMethod: 'bankTransfer', paymentSchedule: 'full', },
-]
+// export const mockStudents: Student[] = [
+//   { id: 1, parentFullName: 'Иван Иванов',       parentPhone: '0888 123 456', childFullName: 'Maria Ivanova Petrova',    paymentMethod: 'cash', paymentSchedule: 'split', },
+//   { id: 2, parentFullName: 'Georgi Georgiev Dimitrov', parentPhone: '0877 234 567', childFullName: 'Petar Georgiev Dimitrov',  paymentMethod: 'bankTransfer', paymentSchedule: 'full', },
+//   { id: 3, parentFullName: 'Elena Todorova Stoyanova', parentPhone: '0899 345 678', childFullName: 'Sofia Todorova Stoyanova', paymentMethod: 'cash', paymentSchedule: 'split',},
+//   { id: 4, parentFullName: 'Dimitar Kolev Angelov',    parentPhone: '0866 456 789', childFullName: 'Nikola Kolev Angelov',     paymentMethod: 'bankTransfer', paymentSchedule: 'full', },
+// ]
 
-export const mockFees: Fee[] = []
-export const mockPayments: Payment[] = []
+// export const mockFees: Fee[] = []
+// export const mockPayments: Payment[] = []

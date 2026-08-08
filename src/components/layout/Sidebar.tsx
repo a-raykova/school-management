@@ -1,13 +1,14 @@
 'use client'
 
-import { NavPage, CurrentUser, UserRole } from '@/types'
+import Link from 'next/link'
+import { usePathname } from 'next/navigation'
+import { NavPage, CurrentUser } from '@/types'
+import { ROUTES, pathnameToNavPage } from '@/constants/routes'
 import Image from 'next/image'
 import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
 
 interface SidebarProps {
-  activePage: NavPage
-  onNavigate: (page: NavPage) => void
   user: CurrentUser
 }
 
@@ -21,7 +22,9 @@ const navItems: { id: NavPage; label: string; icon: string }[] = [
   { id: 'announcements', label: 'Announcements', icon: '/announcement.png' },
 ]
 
-export default function Sidebar({ activePage, onNavigate, user }: SidebarProps) {
+export default function Sidebar({ user }: SidebarProps) {
+  const pathname = usePathname()
+  const activePage = pathnameToNavPage(pathname)
   const portalLabel = user.role === 'admin' ? 'Staff portal' : 'Teacher portal'
   const supabase = createClient()
   const router = useRouter()
@@ -31,9 +34,16 @@ export default function Sidebar({ activePage, onNavigate, user }: SidebarProps) 
     router.push('/sign-in')
   }
 
+  const linkCls = (page: NavPage) =>
+    `w-full flex items-center justify-center sm:justify-start gap-2.5 px-0 sm:px-4 py-[9px] text-[13px] transition-colors text-left ${
+      activePage === page
+        ? 'bg-blue-50 text-blue-700 font-medium'
+        : 'text-gray-500 hover:bg-gray-50 hover:text-gray-800'
+    }`
+
   return (
     <aside className="w-[52px] sm:w-[200px] min-w-[52px] sm:min-w-[200px] bg-white border-r border-gray-100 flex flex-col h-full transition-all">
- 
+
       {/* Logo */}
       <div className="px-3 sm:px-4 py-5 border-b border-gray-100 overflow-hidden">
         <div className="text-[15px] font-medium text-gray-900 hidden sm:block">ИнтелектИ</div>
@@ -44,7 +54,7 @@ export default function Sidebar({ activePage, onNavigate, user }: SidebarProps) 
           </div>
         </div>
       </div>
- 
+
       {/* Navigation */}
       <nav className="flex-1 py-2 overflow-y-auto">
         {navItems
@@ -54,16 +64,11 @@ export default function Sidebar({ activePage, onNavigate, user }: SidebarProps) 
             (item.id !== 'week'     || user.role !== 'admin')
           )
           .map((item) => (
-            <button
+            <Link
               key={item.id}
-              type="button"
-              onClick={() => onNavigate(item.id)}
+              href={ROUTES[item.id]}
               title={item.label}
-              className={`w-full flex items-center justify-center sm:justify-start gap-2.5 px-0 sm:px-4 py-[9px] text-[13px] transition-colors text-left ${
-                activePage === item.id
-                  ? 'bg-blue-50 text-blue-700 font-medium'
-                  : 'text-gray-500 hover:bg-gray-50 hover:text-gray-800'
-              }`}
+              className={linkCls(item.id)}
             >
               <Image
                 src={item.icon}
@@ -73,16 +78,15 @@ export default function Sidebar({ activePage, onNavigate, user }: SidebarProps) 
                 className={`shrink-0 transition-opacity ${activePage === item.id ? 'opacity-100' : 'opacity-50'}`}
               />
               <span className="hidden sm:block">{item.label}</span>
-            </button>
+            </Link>
           ))}
- 
+
         {/* Other section */}
         <div className="mt-4 px-0 sm:px-4">
           <div className="text-[10px] font-medium text-slate-400 uppercase tracking-wider mb-2 hidden sm:block">Other</div>
           <div className="space-y-0.5">
-            <button
-              type="button"
-              onClick={() => onNavigate('profile')}
+            <Link
+              href={ROUTES.profile}
               title="Profile"
               className={`w-full flex items-center justify-center sm:justify-start gap-2.5 py-[9px] sm:px-0 text-[13px] transition-colors text-left rounded-lg ${
                 activePage === 'profile' ? 'bg-blue-50 text-blue-700 font-medium' : 'text-gray-500 hover:bg-gray-50 hover:text-gray-800'
@@ -90,8 +94,8 @@ export default function Sidebar({ activePage, onNavigate, user }: SidebarProps) 
             >
               <Image src="/profile.png" alt="" width={18} height={18} className="shrink-0 opacity-60" />
               <span className="hidden sm:block">Profile</span>
-            </button>
- 
+            </Link>
+
             {/* Sign out */}
             <button
               type="button"
@@ -120,7 +124,7 @@ export default function Sidebar({ activePage, onNavigate, user }: SidebarProps) 
           </div>
         </div>
       </nav>
- 
+
       {/* User info */}
       <div className="px-2 sm:px-4 py-3 border-t border-gray-100 mt-auto">
         <div className="flex items-center justify-center sm:justify-start gap-2">
