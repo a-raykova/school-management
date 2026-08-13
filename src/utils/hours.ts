@@ -1,5 +1,5 @@
 import { ScheduleEntry } from "@/types"
-import { TeacherHours } from "@/types"
+import { TeacherHours, TeacherHonorarium, TeacherOption } from "@/types"
 import { getWeekStart, addDays, dateForDayInWeek, entryOccursInWeek } from '@/utils/schedule'
 
 /* ─────────────────────────── core computation ──────────────────── */
@@ -55,4 +55,37 @@ export function computeTeacherHours(
   return Object.entries(map)
     .map(([name, h]) => ({ name, ...h }))
     .sort((a, b) => (b.workedHours + b.plannedHours) - (a.workedHours + a.plannedHours))
+}
+
+/**
+ * Honorariums = teachers get paid per completed overtime class, not salary.
+ * Only counts classes that have already happened (`workedHours`) — planned/
+ * future overtime classes are intentionally excluded, since honorariums are
+ * only settled once a month has fully passed.
+ */
+export function computeHonorariums(
+  schedule: ScheduleEntry[],
+  teachers: TeacherOption[],
+  year: number,
+  month: number,
+  today: Date,
+): TeacherHonorarium[] {
+  const overtimeEntries = schedule.filter(e => e.isOvertime)
+  const hours = computeTeacherHours(overtimeEntries, year, month, today)
+
+  const byName = new Map(hours.map(h => [h.name, h.workedHours]))
+
+  return teachers
+    .map((t): TeacherHonorarium => {
+      const workedOvertimeHours = byName.get(t.name) ?? 0
+      return {
+        teacherId: t.id,
+        name: t.name,
+        workedOvertimeHours,
+        rate: t.honorariumRate,
+        total: t.honorariumRate == null ? null : round(workedOvertimeHours * t.honorariumRate),
+      }
+    })
+    .filter(t => t.workedOvertimeHours > 0)
+    .sort((a, b) => b.workedOvertimeHours - a.workedOvertimeHours)
 }

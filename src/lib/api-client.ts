@@ -6,6 +6,7 @@ import type {
   PaymentMethod,
   ScheduleEntry,
   Student,
+  TeacherOption,
 } from '@/types'
 import type { ScheduleCreateInput } from '@/lib/mappers'
 
@@ -30,7 +31,14 @@ export function fetchSchedule() {
 }
 
 export function fetchTeachers() {
-  return request<{ id: number; name: string }[]>('/api/teachers')
+  return request<TeacherOption[]>('/api/teachers')
+}
+
+export function updateTeacherRate(id: number, honorariumRate: number | null) {
+  return request<TeacherOption>(`/api/teachers/${id}`, {
+    method: 'PATCH',
+    body: JSON.stringify({ honorariumRate }),
+  })
 }
 
 export function fetchRooms() {

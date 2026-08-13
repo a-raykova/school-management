@@ -1,6 +1,7 @@
 import { prisma } from '@/lib/prisma'
 import { jsonOk } from '@/lib/api-response'
 import { requireAuth } from '@/lib/require-auth'
+import { toTeacherOption } from '@/lib/mappers'
 
 //returns all teachers from db with role TEACHER
 export async function GET() {
@@ -10,11 +11,8 @@ export async function GET() {
   const teachers = await prisma.user.findMany({
     where: { role: 'TEACHER' },
     orderBy: { firstName: 'asc' },
-    select: { id: true, firstName: true, lastName: true },
+    select: { id: true, firstName: true, lastName: true, honorariumRate: true },
   })
 
-  return jsonOk(teachers.map(t => ({
-    id: t.id,
-    name: `${t.firstName} ${t.lastName}`,
-  })))
+  return jsonOk(teachers.map(toTeacherOption))
 }

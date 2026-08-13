@@ -62,6 +62,7 @@ function hasRoomConflict(
       recurrence: form.recurrence,
       anchorDate: toISO(dateForDayInWeek(weekStart, form.day)),
       exceptions: [],
+      isOvertime: form.isOvertime,
     } as ScheduleEntry
 
     const clashWeek = weeks.find(w =>
@@ -100,6 +101,7 @@ const blankForm = {
   room:       '',
   teacher:    '',
   recurrence: 'weekly' as RecurrenceType,
+  isOvertime: false,
 }
 
 /* ─────────────────────────── component ─────────────────────────── */
@@ -190,6 +192,7 @@ export default function Schedule({ schedule, onAdd, onRemove, onRemoveOccurrence
       room:       entry.room,
       teacher: user.role === 'admin' ? entry.teacher : `${user.firstName} ${user.lastName}`,
       recurrence: entry.recurrence,
+      isOvertime: entry.isOvertime,
     })
     setModalOpen(true)
   }
@@ -221,6 +224,7 @@ export default function Schedule({ schedule, onAdd, onRemove, onRemoveOccurrence
       color: rooms.find(r => r.name === form.room)?.color ?? '#3b82f6',
       recurrence: form.recurrence,
       anchorDate: editEntry?.anchorDate ?? toISO(dateForDayInWeek(weekStart, form.day)),
+      isOvertime: form.isOvertime,
     }
     editEntry ? onEdit({ ...base, id: editEntry.id }) : onAdd(base)
     closeModal()
@@ -403,6 +407,19 @@ export default function Schedule({ schedule, onAdd, onRemove, onRemoveOccurrence
               ))}
             </select>
           </div>
+          <label className="flex items-start gap-2.5 px-3 py-2.5 rounded-lg bg-amber-50 border border-amber-200 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={form.isOvertime}
+              onChange={e => setForm({ ...form, isOvertime: e.target.checked })}
+              className="mt-0.5"
+            />
+            <span>
+              <span className="block text-[12px] font-medium text-amber-800">
+                This class is overtime
+              </span>
+            </span>
+          </label>
         </div>
         {roomError && (
           <div className="flex items-start mt-4 gap-2 px-3 py-2.5 rounded-lg bg-red-50 border border-red-200 text-red-700">
@@ -495,6 +512,11 @@ function EventChip({
         <div className="flex items-center gap-1.5">
           <span className="text-[13px] font-semibold text-gray-900 truncate">{entry.subject}</span>
           {recIcon && <span className="text-[11px] text-gray-400 shrink-0">↻ {entry.recurrence}</span>}
+          {entry.isOvertime && (
+            <span title="Overtime — paid via honorarium" className="text-[10px] font-medium text-amber-700 bg-amber-100 px-1.5 py-0.5 rounded shrink-0">
+              💰 overtime
+            </span>
+          )}
           {locked && <span title="Editing locked — class starting soon" className="text-[10px] text-gray-400 shrink-0">🔒</span>}
         </div>
         <div className="flex items-center gap-3 mt-0.5 flex-wrap">

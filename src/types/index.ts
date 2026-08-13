@@ -45,19 +45,10 @@ export interface ScheduleEntry {
   /** ISO date string of the first occurrence – used to anchor recurring events */
   anchorDate: string
   exceptions?: string[]
+  /** true = this whole recurring class is paid via honorarium, not salary */
+  isOvertime: boolean
 }
 
-// export interface ClassEvent {
-//   time: string
-//   title: string
-//   meta: string
-//   soon?: boolean
-// }
-
-// export interface Teacher {
-//   name: string
-//   hours: number
-// }
 
 export interface Announcement {
   id: number
@@ -103,4 +94,21 @@ export interface TeacherHours {
   name:      string
   workedHours: number   // classes whose date < today
   plannedHours: number   // classes whose date >= today and <= end of month
+}
+
+// A teacher as far as the schedule/honorarium admin UI is concerned
+export interface TeacherOption {
+  id: number
+  name: string
+  // €/hour paid for overtime classes. null = not set yet by admin.
+  honorariumRate: number | null
+}
+
+// for Hours.tsx -> Honorariums tab
+export interface TeacherHonorarium {
+  teacherId: number
+  name: string
+  workedOvertimeHours: number   // completed overtime classes this month
+  rate: number | null           // €/hour, null = not set yet
+  total: number | null          // workedOvertimeHours * rate, null if rate not set
 }

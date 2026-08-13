@@ -19,6 +19,7 @@ import type {
   PaymentMethod,
   ScheduleEntry,
   Student,
+  TeacherOption,
 } from '@/types'
 import { computeRooms } from '@/utils/rooms'
 import { computeBusiestDay } from '@/utils/dashboard'
@@ -32,7 +33,7 @@ interface AppDataContextValue {
   fees: Fee[]
   rooms: ReturnType<typeof computeRooms>
   dbRooms: { id: number; name: string; color: string | null }[]
-  teachersList: { id: number; name: string }[]
+  teachersList: TeacherOption[]
   busiestDay: { day: string; count: number } | null
   loading: boolean
   error: string | null
@@ -48,6 +49,7 @@ interface AppDataContextValue {
     note?: string,
   ) => Promise<void>
   handleAddFee: (studentId: number, amount: number, note?: string) => Promise<void>
+  handleUpdateTeacherRate: (teacherId: number, honorariumRate: number | null) => Promise<void>
 }
 
 const AppDataContext = createContext<AppDataContextValue | null>(null)
@@ -64,7 +66,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
 
   const [rooms, setRooms] = useState(() => computeRooms([], []))
   const [dbRooms, setDbRooms] = useState<{ id: number; name: string; color: string | null }[]>([])
-  const [teachersList, setTeachersList] = useState<{ id: number; name: string }[]>([])
+  const [teachersList, setTeachersList] = useState<TeacherOption[]>([])
 
   const refreshAnnouncements = useCallback(async () => {
     const data = await api.fetchAnnouncements()
@@ -193,6 +195,12 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
       setFees((prev) => [...prev, created])
     })
 
+  const handleUpdateTeacherRate = (teacherId: number, honorariumRate: number | null) =>
+    runMutation(async () => {
+      const updated = await api.updateTeacherRate(teacherId, honorariumRate)
+      setTeachersList((prev) => prev.map((t) => (t.id === teacherId ? updated : t)))
+    })
+
   const value: AppDataContextValue = {
     user,
     schedule,
@@ -213,6 +221,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
     handlePostAnnouncement,
     handleLogPayment,
     handleAddFee,
+    handleUpdateTeacherRate,
   }
 
   return <AppDataContext.Provider value={value}>{children}</AppDataContext.Provider>

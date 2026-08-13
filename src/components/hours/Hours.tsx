@@ -1,9 +1,9 @@
 'use client'
 
 import { useState } from 'react'
-import { ScheduleEntry } from '@/types'
+import { ScheduleEntry, TeacherOption } from '@/types'
 import Card, { CardHeader } from '@/components/layout/Card'
-import { computeTeacherHours } from '@/utils/hours'
+import { computeTeacherHours, computeHonorariums } from '@/utils/hours'
 
 /* ─────────────────────────── sub-components ────────────────────── */
 
@@ -83,14 +83,138 @@ function Legend() {
   )
 }
 
+/* ─────────────────────────── tab bar ───────────────────────────── */
+
+type HoursTab = 'hours' | 'honorariums'
+
+function TabBar({ active, onChange }: { active: HoursTab; onChange: (t: HoursTab) => void }) {
+  const tabCls = (tab: HoursTab) =>
+    `px-3.5 py-1.5 rounded-lg text-[12.5px] font-medium transition-colors ${
+      active === tab
+        ? 'bg-gray-900 text-white'
+        : 'text-gray-500 hover:bg-gray-100'
+    }`
+  return (
+    <div className="flex gap-1 mb-4 bg-gray-50 border border-gray-200 rounded-xl p-1 w-fit">
+      <button onClick={() => onChange('hours')} className={tabCls('hours')}>Teaching hours</button>
+      <button onClick={() => onChange('honorariums')} className={tabCls('honorariums')}>Honorariums</button>
+    </div>
+  )
+}
+
+/* ─────────────────────────── Honorariums tab ───────────────────── */
+
+function HonorariumsTab({
+  schedule,
+  teachers,
+  selected,
+  today,
+  onUpdateRate,
+}: {
+  schedule: ScheduleEntry[]
+  teachers: TeacherOption[]
+  selected: { year: number; month: number; label: string }
+  today: Date
+  onUpdateRate: (teacherId: number, rate: number | null) => void
+}) {
+  const monthStart = new Date(selected.year, selected.month, 1)
+  const monthEnd   = new Date(selected.year, selected.month + 1, 0)
+  const isPast     = monthEnd < today
+  const monthLabel = monthStart.toLocaleDateString('en-GB', { month: 'long', year: 'numeric' })
+
+  const [drafts, setDrafts] = useState<Record<number, string>>({})
+
+  if (!isPast) {
+    return (
+      <div className="flex items-center gap-2 px-4 py-3 rounded-xl bg-gray-50 border border-gray-200 text-[13px] text-gray-500">
+        🗓️ Honorariums for {monthLabel} will be available once the month has fully ended — worked overtime hours are only settled for closed months.
+      </div>
+    )
+  }
+
+  const rows = computeHonorariums(schedule, teachers, selected.year, selected.month, today)
+  const grandTotal = rows.reduce((s, r) => s + (r.total ?? 0), 0)
+  const missingRateCount = rows.filter(r => r.rate == null).length
+
+  const commitRate = (teacherId: number, raw: string) => {
+    const trimmed = raw.trim()
+    if (trimmed === '') { onUpdateRate(teacherId, null); return }
+    const value = Number(trimmed)
+    if (!Number.isFinite(value) || value < 0) return
+    onUpdateRate(teacherId, value)
+  }
+
+  return (
+    <>
+      <div className="grid grid-cols-2 gap-2.5 mb-4">
+        <SummaryCard label="Overtime teachers" sub={`Paid via honorarium — ${monthLabel}`}>
+          <div className="text-[22px] font-medium text-blue-600">{rows.length}</div>
+        </SummaryCard>
+        <SummaryCard label="Total to pay out" sub={monthLabel}>
+          <div className="text-[22px] font-medium text-gray-900">{grandTotal.toFixed(2)}€</div>
+          {missingRateCount > 0 && (
+            <div className="text-[11px] text-amber-600 mt-0.5">{missingRateCount} teacher(s) missing a rate</div>
+          )}
+        </SummaryCard>
+      </div>
+
+      <Card>
+        <CardHeader title={`Overtime worked — ${monthLabel}`} />
+        {rows.length === 0 ? (
+          <p className="text-[12px] text-gray-400 italic">No overtime classes were worked this month.</p>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-[12.5px]">
+              <thead>
+                <tr className="text-left text-[11px] text-gray-400 uppercase tracking-wider">
+                  <th className="pb-2 font-medium">Teacher</th>
+                  <th className="pb-2 font-medium">Overtime hours worked</th>
+                  <th className="pb-2 font-medium">Rate (€/h)</th>
+                  <th className="pb-2 font-medium text-right">Total</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-100">
+                {rows.map(r => (
+                  <tr key={r.teacherId}>
+                    <td className="py-2.5 text-gray-800 font-medium">{r.name}</td>
+                    <td className="py-2.5 text-gray-600">{r.workedOvertimeHours} h</td>
+                    <td className="py-2.5">
+                      <input
+                        type="number"
+                        min={0}
+                        step={0.5}
+                        placeholder="—"
+                        value={drafts[r.teacherId] ?? (r.rate ?? '')}
+                        onChange={e => setDrafts(d => ({ ...d, [r.teacherId]: e.target.value }))}
+                        onBlur={e => commitRate(r.teacherId, e.target.value)}
+                        className="w-20 px-2 py-1 rounded-lg border border-gray-300 text-[12.5px] focus:outline-none focus:border-blue-500"
+                      />
+                    </td>
+                    <td className="py-2.5 text-right font-medium text-gray-900">
+                      {r.total == null ? <span className="text-gray-400 font-normal">set rate</span> : `${r.total.toFixed(2)}€`}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </Card>
+    </>
+  )
+}
+
 /* ─────────────────────────── main component ────────────────────── */
 
 interface HoursProps {
   schedule: ScheduleEntry[]
+  teachers: TeacherOption[]
+  onUpdateRate: (teacherId: number, rate: number | null) => void
 }
 
-export default function Hours({ schedule }: HoursProps) {
+export default function Hours({ schedule, teachers, onUpdateRate }: HoursProps) {
   const today = new Date(); today.setHours(0, 0, 0, 0)
+  const [tab, setTab] = useState<HoursTab>('hours')
 
   const months = [-2, -1, 0].map(offset => {
     const d = new Date(today.getFullYear(), today.getMonth() + offset, 1)
@@ -103,7 +227,7 @@ export default function Hours({ schedule }: HoursProps) {
 
   const [selected, setSelected] = useState(months[2])
 
-  const teachers   = computeTeacherHours(schedule, selected.year, selected.month, today)
+  const teacherHours = computeTeacherHours(schedule, selected.year, selected.month, today)
   const monthStart = new Date(selected.year, selected.month, 1)
   const monthEnd   = new Date(selected.year, selected.month + 1, 0)
   const isFuture   = monthStart > today
@@ -111,16 +235,20 @@ export default function Hours({ schedule }: HoursProps) {
   const isOngoing  = !isFuture && !isPast
   const monthLabel = new Date(selected.year, selected.month, 1).toLocaleDateString('en-GB', { month: 'long', year: 'numeric' })
 
-  const totalWorked  = teachers.reduce((s, t) => s + t.workedHours, 0)
-  const totalPlanned = teachers.reduce((s, t) => s + t.plannedHours, 0)
-  const topTeacher   = teachers[0]
-  const maxHours     = Math.max(teachers.reduce((m, t) => Math.max(m, t.workedHours + t.plannedHours), 0), 1)
+  const totalWorked  = teacherHours.reduce((s, t) => s + t.workedHours, 0)
+  const totalPlanned = teacherHours.reduce((s, t) => s + t.plannedHours, 0)
+  const topTeacher   = teacherHours[0]
+  const maxHours     = Math.max(teacherHours.reduce((m, t) => Math.max(m, t.workedHours + t.plannedHours), 0), 1)
 
   return (
     <div>
+      <TabBar active={tab} onChange={setTab} />
+
       {/* header + month tabs */}
       <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
-        <h1 className="text-[18px] font-medium text-gray-900">Teaching hours — {monthLabel}</h1>
+        <h1 className="text-[18px] font-medium text-gray-900">
+          {tab === 'hours' ? 'Teaching hours' : 'Honorariums'} — {monthLabel}
+        </h1>
         <div className="flex gap-2">
           {months.map(m => (
             <button
@@ -138,8 +266,15 @@ export default function Hours({ schedule }: HoursProps) {
         </div>
       </div>
 
-      {/* future month guard */}
-      {isFuture ? (
+      {tab === 'honorariums' ? (
+        <HonorariumsTab
+          schedule={schedule}
+          teachers={teachers}
+          selected={selected}
+          today={today}
+          onUpdateRate={onUpdateRate}
+        />
+      ) : isFuture ? (
         <div className="flex items-center gap-2 px-4 py-3 rounded-xl bg-gray-50 border border-gray-200 text-[13px] text-gray-500">
           📅 Hours for a future month are not shown — they will appear as the month begins.
         </div>
@@ -148,7 +283,7 @@ export default function Hours({ schedule }: HoursProps) {
           {/* summary cards */}
           <div className="grid grid-cols-3 gap-2.5 mb-4">
             <SummaryCard label="Active teachers" sub="Teaching this month">
-              <div className="text-[22px] font-medium text-blue-600">{teachers.length}</div>
+              <div className="text-[22px] font-medium text-blue-600">{teacherHours.length}</div>
             </SummaryCard>
 
             <SummaryCard label="School total" sub="All teachers">
@@ -181,11 +316,11 @@ export default function Hours({ schedule }: HoursProps) {
               action={isOngoing ? <Legend /> : undefined}
             />
 
-            {teachers.length === 0 ? (
+            {teacherHours.length === 0 ? (
               <p className="text-[12px] text-gray-400 italic">No classes scheduled this month.</p>
             ) : (
               <div className="space-y-2.5">
-                {teachers.map((t) => {
+                {teacherHours.map((t) => {
                   const total = t.workedHours + t.plannedHours
                   return (
                     <div key={t.name} className="flex items-center gap-2.5">

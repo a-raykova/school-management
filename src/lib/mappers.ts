@@ -107,6 +107,7 @@ type ScheduleWithRelations = {
   teacher: { firstName: string; lastName: string }
   room: { name: string }
   exceptions: { cancelledDate: Date }[]
+  isOvertime: boolean
 }
 
 export function toScheduleEntry(row: ScheduleWithRelations): ScheduleEntry {
@@ -124,6 +125,7 @@ export function toScheduleEntry(row: ScheduleWithRelations): ScheduleEntry {
     recurrence: RECURRENCE_TO_UI[row.recurrence],
     anchorDate: toIsoDate(row.anchorDate),
     exceptions: row.exceptions.map((e) => toIsoDate(e.cancelledDate)),
+    isOvertime: row.isOvertime,
   }
 }
 
@@ -226,3 +228,21 @@ export function toPayment(row: {
 }
 
 export type ScheduleCreateInput = Omit<ScheduleEntry, 'id' | 'exceptions'>
+
+export function toTeacherOption(row: {
+  id: number
+  firstName: string
+  lastName: string
+  honorariumRate: { toNumber(): number } | number | null
+}): { id: number; name: string; honorariumRate: number | null } {
+  return {
+    id: row.id,
+    name: fullName(row.firstName, row.lastName),
+    honorariumRate:
+      row.honorariumRate == null
+        ? null
+        : typeof row.honorariumRate === 'number'
+          ? row.honorariumRate
+          : row.honorariumRate.toNumber(),
+  }
+}

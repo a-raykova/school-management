@@ -44,6 +44,7 @@ export async function createScheduleEntry(
       anchorDate: new Date(`${input.anchorDate}T00:00:00.000Z`),
       teacherId: teacher.id,
       roomId: room.id,
+      isOvertime: input.isOvertime ?? false,
     },
     include: scheduleInclude,
   })
@@ -70,6 +71,7 @@ export async function updateScheduleEntry(
       anchorDate: new Date(`${input.anchorDate}T00:00:00.000Z`),
       teacherId: teacher.id,
       roomId: room.id,
+      isOvertime: input.isOvertime ?? false,
     },
     include: scheduleInclude,
   })
