@@ -1,27 +1,22 @@
 'use client'
 
 import { useState } from 'react'
-import { Announcement, CurrentUser } from '@/types'
+import { Announcement } from '@/types'
 import Card from '@/components/layout/Card'
 import Badge from '@/components/layout/Badge'
 import Modal, { ModalFooter } from '@/components/layout/Modal'
+import { inputCls } from '@/constants';
 
 interface AnnouncementsProps {
   announcements: Announcement[]
   onPost: (title: string, body: string) => void
-  user: CurrentUser  // ← add this
 }
 
-export default function Announcements({ announcements, onPost, user }: AnnouncementsProps) {
+export default function Announcements({ announcements, onPost }: AnnouncementsProps) {
   const [isOpen, setIsOpen] = useState(false)
   const [title, setTitle]   = useState('')
   const [body, setBody]     = useState('')
 
-  const visible = announcements.filter(ann => {
-    if (!ann.targetTeacher) return true
-    if (user.role === 'admin') return true
-    return ann.targetTeacher === `${user.firstName} ${user.lastName}`
-  })
 
   const handlePost = () => {
     if (!title.trim() || !body.trim()) return
@@ -30,9 +25,6 @@ export default function Announcements({ announcements, onPost, user }: Announcem
     setBody('')
     setIsOpen(false)
   }
-
-  const inputCls =
-    'w-full px-2.5 py-1.5 border border-gray-200 rounded-lg text-[13px] text-gray-900 focus:outline-none focus:border-blue-300 bg-white'
 
   return (
     <div>
@@ -48,7 +40,7 @@ export default function Announcements({ announcements, onPost, user }: Announcem
 
       <Card>
         <div className="divide-y divide-gray-50">
-          {visible.map((ann) => (
+          {announcements.map((ann) => (
             <div key={ann.id} className="py-3 first:pt-0 last:pb-0">
               <div className="flex items-start justify-between gap-3 mb-1">
                 <span className="text-[13px] font-medium text-gray-900">{ann.title}</span>

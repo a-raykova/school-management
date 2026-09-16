@@ -4,7 +4,7 @@ import Dashboard from '@/components/dashboard/Dashboard'
 import { useAppData } from '@/providers/AppDataProvider'
 
 export default function DashboardPage() {
-  const { rooms, announcements, user, busiestDay, schedule } = useAppData()
+  const { rooms, announcements, user, schedule, teachersList } = useAppData()
 
   if (!user) return null
 
@@ -13,8 +13,8 @@ export default function DashboardPage() {
       rooms={rooms}
       announcements={announcements}
       user={user}
-      busiestDay={busiestDay}
       schedule={schedule}
+      teachers={teachersList}
     />
   )
 }

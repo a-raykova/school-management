@@ -1,5 +1,6 @@
 // utils/rooms.ts
 import { ScheduleEntry, Room } from '@/types'
+import { getWeekStart, entryOccursInWeek } from '@/utils/schedule'
 
 function getCurrentTimeString(): string {
   const now = new Date()
@@ -14,12 +15,18 @@ export function computeRooms(
   schedule: ScheduleEntry[],
   dbRooms: { id: number; name: string; color: string | null }[]
 ): Room[] {
-  const now   = getCurrentTimeString()
-  const today = getTodayName()
+  const now       = getCurrentTimeString()
+  const today     = getTodayName()
+  const weekStart = getWeekStart(new Date())
 
   return dbRooms.map(room => {
     const activeEntry = schedule.find(
-      e => e.room === room.name && e.day === today && e.start <= now && e.end > now
+      e =>
+        e.room === room.name &&
+        e.day === today &&
+        e.start <= now &&
+        e.end > now &&
+        entryOccursInWeek(e, weekStart)
     )
 
     return {

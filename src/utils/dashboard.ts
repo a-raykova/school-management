@@ -1,3 +1,5 @@
+// Unused
+
 import { ScheduleEntry } from '@/types'
 import { getWeekStart, entryOccursInWeek } from '@/utils/schedule'
 import { ALL_DAYS } from '@/constants'

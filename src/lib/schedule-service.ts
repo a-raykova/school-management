@@ -7,6 +7,7 @@ import {
   toScheduleEntry,
 } from '@/lib/mappers'
 import type { ScheduleEntry } from '@/types'
+import type { Weekday } from '@/generated/prisma/client'
 
 export async function resolveScheduleRelations(input: ScheduleCreateInput) {
   const teacher = await findTeacherByFullName(input.teacher)
@@ -27,10 +28,33 @@ export async function resolveScheduleRelations(input: ScheduleCreateInput) {
   return { teacher, room, weekday }
 }
 
+async function assertNoRoomConflict(
+  roomId: number,
+  weekday: Weekday,
+  start: string,
+  end: string,
+  excludeEntryId?: number,
+) {
+  const conflict = await prisma.scheduleEntry.findFirst({
+    where: {
+      roomId,
+      weekday,
+      id: excludeEntryId ? { not: excludeEntryId } : undefined,
+      // overlap test: existing.start < new.end AND existing.end > new.start
+      startTime: { lt: end },
+      endTime: { gt: start },
+    },
+  })
+  if (conflict) {
+    throw new Error(`Room is already booked ${conflict.startTime}–${conflict.endTime} on this day`)
+  }
+}
+
 export async function createScheduleEntry(
   input: ScheduleCreateInput,
 ): Promise<ScheduleEntry> {
   const { teacher, room, weekday } = await resolveScheduleRelations(input)
+  await assertNoRoomConflict(room.id, weekday, input.start, input.end)
 
   const row = await prisma.scheduleEntry.create({
     data: {
@@ -57,6 +81,7 @@ export async function updateScheduleEntry(
   input: ScheduleCreateInput,
 ): Promise<ScheduleEntry> {
   const { teacher, room, weekday } = await resolveScheduleRelations(input)
+  await assertNoRoomConflict(room.id, weekday, input.start, input.end, id)
 
   const row = await prisma.scheduleEntry.update({
     where: { id },

@@ -22,7 +22,7 @@ async function request<T>(url: string, init?: RequestInit): Promise<T> {
   return data as T
 }
 
-export function fetchCurrentUser(email?: string) {
+export function fetchCurrentUser() {
   return request<CurrentUser>('/api/users/current')
 }
 

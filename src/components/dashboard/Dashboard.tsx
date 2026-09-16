@@ -1,29 +1,29 @@
 'use client'
 
 import Link from 'next/link'
-import { Room, Announcement, CurrentUser } from '@/types'
+import { Room, Announcement, CurrentUser, TeacherOption } from '@/types'
 import { ROUTES } from '@/constants/routes'
 import Card, { CardHeader } from '@/components/layout/Card'
 import Badge from '@/components/layout/Badge'
 import { ScheduleEntry } from '@/types'
 import { getWeekStart, entryOccursInWeek } from '@/utils/schedule'
 import { ALL_DAYS } from '@/constants'
-import { computeTeacherHours } from '@/utils/hours'
+import { computeTeacherHours, computeHonorariums } from '@/utils/hours'
 
 interface DashboardProps {
   rooms: Room[]
   announcements: Announcement[]
   user: CurrentUser
-  busiestDay: { day: string; count: number } | null
   schedule: ScheduleEntry[]
+  teachers: TeacherOption[]
 }
 
 export default function Dashboard({
   rooms,
   announcements,
   user,
-  busiestDay,
-  schedule
+  schedule,
+  teachers
 }: DashboardProps) {
   const isAdmin   = user.role === 'admin'
   const myName  = `${user.firstName} ${user.lastName}`
@@ -43,9 +43,46 @@ export default function Dashboard({
   const workedLabel  = `${Math.round(myHours.workedHours  * 10) / 10} h worked`
   const plannedLabel = `of ${Math.round((myHours.workedHours + myHours.plannedHours) * 10) / 10} h planned`
 
+  // previous month's honorariums — used by both admin (sum) and teacher (their own row)
+  const prevMonthDate = new Date(today.getFullYear(), today.getMonth() - 1, 1)
+  const prevMonthLabel = prevMonthDate.toLocaleDateString('en-GB', { month: 'long' })
+
+  const honorariumRows = computeHonorariums(
+    schedule,
+    teachers,
+    prevMonthDate.getFullYear(),
+    prevMonthDate.getMonth(),
+    today
+  )
+
+  // teacher view: just their own row
+  const myHonorarium = honorariumRows.find((r) => r.name === myName) ?? null
+
+  const honorariumValue = !myHonorarium
+    ? '0€'
+    : myHonorarium.total != null
+      ? `${myHonorarium.total.toFixed(2)}€`
+      : '—'
+
+  const honorariumSub = !myHonorarium
+    ? `No overtime in ${prevMonthLabel}`
+    : myHonorarium.rate != null
+      ? `${myHonorarium.workedOvertimeHours} h overtime`
+      : 'Ask admin to set your rate'
+
+  // admin view: total payout across everyone
+  const totalHonorariumPayout = honorariumRows.reduce((sum, r) => sum + (r.total ?? 0), 0)
+  const missingRateCount = honorariumRows.filter((r) => r.rate == null).length
+
+  const adminHonorariumSub =
+    missingRateCount > 0
+      ? `${missingRateCount} teacher${missingRateCount === 1 ? '' : 's'} missing a rate`
+      : `${honorariumRows.length} teacher${honorariumRows.length === 1 ? '' : 's'} paid`
+
+
   const stats = [
     { label: isAdmin ? 'School hours this month' : 'My hours this month', value: workedLabel, sub:   plannedLabel,},
-    { label: 'Busiest day this week', value: isAdmin ? '—' : (busiestDay?.day ?? 'None'), sub:   isAdmin ? 'Admin account' : (busiestDay ? `${busiestDay.count} ${busiestDay.count === 1 ? 'class' : 'classes'}` : 'No classes this week'),},
+    isAdmin ? { label: `Honorariums (${prevMonthLabel})`, value: `${totalHonorariumPayout.toFixed(2)}€`, sub: adminHonorariumSub,} : { label: `Honorarium (${prevMonthLabel})`, value: honorariumValue, sub: honorariumSub },
     { label: 'Free rooms now', value: String(freeCount), sub: `of ${rooms.length} rooms` },
     { label: 'Announcements', value: String(announcements.length), sub: newToday > 0 ? `${newToday} new today` : 'No new today' },
   ]

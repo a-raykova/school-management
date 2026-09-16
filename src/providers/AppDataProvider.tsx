@@ -5,7 +5,6 @@ import {
   useCallback,
   useContext,
   useEffect,
-  useMemo,
   useState,
   type ReactNode,
 } from 'react'
@@ -22,7 +21,6 @@ import type {
   TeacherOption,
 } from '@/types'
 import { computeRooms } from '@/utils/rooms'
-import { computeBusiestDay } from '@/utils/dashboard'
 
 interface AppDataContextValue {
   user: CurrentUser | null
@@ -34,7 +32,6 @@ interface AppDataContextValue {
   rooms: ReturnType<typeof computeRooms>
   dbRooms: { id: number; name: string; color: string | null }[]
   teachersList: TeacherOption[]
-  busiestDay: { day: string; count: number } | null
   loading: boolean
   error: string | null
   handleAddSchedule: (entry: ScheduleCreateInput) => Promise<void>
@@ -120,14 +117,6 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
     }
   }, [])
 
-  const busiestDay = useMemo(
-    () =>
-      user && user.role === 'admin'
-        ? null
-        : computeBusiestDay(schedule, user ? `${user.firstName} ${user.lastName}` : ''),
-    [schedule, user],
-  )
-
   useEffect(() => {
     const recompute = () => setRooms(computeRooms(schedule, dbRooms))
     recompute()
@@ -211,7 +200,6 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
     rooms,
     dbRooms,
     teachersList,
-    busiestDay,
     loading,
     error,
     handleAddSchedule,

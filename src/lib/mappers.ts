@@ -61,13 +61,13 @@ const PAYMENT_SCHEDULE_TO_UI: Record<PrismaPaymentSchedule, PaymentSchedule> = {
   SPLIT: 'split',
 }
 
-export const UI_PAYMENT_SCHEDULE_TO_PRISMA: Record<
-  PaymentSchedule,
-  PrismaPaymentSchedule
-> = {
-  full: 'FULL',
-  split: 'SPLIT',
-}
+// export const UI_PAYMENT_SCHEDULE_TO_PRISMA: Record<
+//   PaymentSchedule,
+//   PrismaPaymentSchedule
+// > = {
+//   full: 'FULL',
+//   split: 'SPLIT',
+// }
 
 export function prismaRoleToUi(role: PrismaUserRole): UserRole {
   return role === 'ADMIN' ? 'admin' : 'teacher'

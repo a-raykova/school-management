@@ -4,6 +4,7 @@ import { useState } from "react";
 import * as XLSX from "xlsx";
 import { Student, Payment, Fee, PaymentMethod } from "@/types";
 import Card, { CardHeader } from "@/components/layout/Card";
+import { inputCls, labelCls } from '@/constants';
 
 interface PaymentsProps {
   students: Student[];
@@ -186,11 +187,6 @@ export default function Payments({ students, payments, fees, onLogPayment, onAdd
     rows.sort((a, b) => (a.date < b.date ? 1 : a.date > b.date ? -1 : 0));
     return rows;
   };
-
-  const inputCls =
-    "w-full px-2.5 py-1.5 rounded-lg text-[13px] focus:outline-none transition-colors " +
-    "bg-white border border-gray-300 text-gray-800 placeholder-gray-400 focus:border-blue-500";
-  const labelCls = "block text-[11px] font-medium text-gray-500 uppercase tracking-wider mb-1";
 
   return (
     <div>

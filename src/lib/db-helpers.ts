@@ -19,7 +19,7 @@ export const scheduleInclude = {
   exceptions: true,
 } as const
 
-//връща null ако няма преподавател с роля TEACHER
+//връща null ако няма преподавател с роля TEACHER - не използван в момента
 export async function findTeacherById(teacherId: number) {
   if (!Number.isInteger(teacherId) || teacherId <= 0) return null;
  

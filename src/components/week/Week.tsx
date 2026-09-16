@@ -2,18 +2,13 @@
 
 import { useMemo } from 'react'
 import { ScheduleEntry, CurrentUser } from '@/types'
-import { toISO } from '@/utils/date'
 import { getWeekStart, addDays, dateForDayInWeek, entryOccursInWeek } from '@/utils/schedule'
 import { ALL_DAYS, DAY_SHORT } from '@/constants'
+import { isSameDay } from '@/utils/schedule'
 
 
 /* ─────────────────────────── helpers ─────────────────────────── */
 
-function isSameDay(a: Date, b: Date) {
-  return a.getFullYear() === b.getFullYear() &&
-         a.getMonth()    === b.getMonth()    &&
-         a.getDate()     === b.getDate()
-}
 
 function isNowBetween(start: string, end: string): boolean {
   const now  = new Date()

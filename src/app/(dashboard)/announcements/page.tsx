@@ -12,7 +12,6 @@ export default function AnnouncementsPage() {
     <Announcements
       announcements={announcements}
       onPost={handlePostAnnouncement}
-      user={user}
     />
   )
 }
