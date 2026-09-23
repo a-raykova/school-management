@@ -64,6 +64,7 @@ model Room {
   id    Int     @id @default(autoincrement())
   name  String  @unique
   color String?
+  isActive Boolean @default(true)
 
   scheduleEntries ScheduleEntry[]
 }

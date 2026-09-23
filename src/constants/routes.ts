@@ -9,6 +9,7 @@ export const ROUTES: Record<NavPage, string> = {
   payments: '/payments',
   announcements: '/announcements',
   profile: '/profile',
+  manage: '/manage',
 }
 
 export function pathnameToNavPage(pathname: string): NavPage {

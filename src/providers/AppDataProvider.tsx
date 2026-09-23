@@ -9,6 +9,7 @@ import {
   type ReactNode,
 } from 'react'
 import type { ScheduleCreateInput } from '@/lib/mappers'
+import type { DbRoom } from '@/lib/api-client'
 import * as api from '@/lib/api-client'
 import type {
   Announcement,
@@ -30,7 +31,7 @@ interface AppDataContextValue {
   payments: Payment[]
   fees: Fee[]
   rooms: ReturnType<typeof computeRooms>
-  dbRooms: { id: number; name: string; color: string | null }[]
+  dbRooms: DbRoom[]
   teachersList: TeacherOption[]
   loading: boolean
   error: string | null
@@ -47,6 +48,9 @@ interface AppDataContextValue {
   ) => Promise<void>
   handleAddFee: (studentId: number, amount: number, note?: string) => Promise<void>
   handleUpdateTeacherRate: (teacherId: number, honorariumRate: number | null) => Promise<void>
+  handleAddRoom: (name: string, color?: string | null) => Promise<void>
+  handleUpdateRoom: (id: number, changes: { name?: string; color?: string | null; isActive?: boolean }) => Promise<void>
+  handleDeleteRoom: (id: number) => Promise<void>
 }
 
 const AppDataContext = createContext<AppDataContextValue | null>(null)
@@ -62,7 +66,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
   const [error, setError] = useState<string | null>(null)
 
   const [rooms, setRooms] = useState(() => computeRooms([], []))
-  const [dbRooms, setDbRooms] = useState<{ id: number; name: string; color: string | null }[]>([])
+  const [dbRooms, setDbRooms] = useState<DbRoom[]>([])
   const [teachersList, setTeachersList] = useState<TeacherOption[]>([])
 
   const refreshAnnouncements = useCallback(async () => {
@@ -189,6 +193,31 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
       const updated = await api.updateTeacherRate(teacherId, honorariumRate)
       setTeachersList((prev) => prev.map((t) => (t.id === teacherId ? updated : t)))
     })
+  
+  const handleAddRoom = (name: string, color?: string | null) =>
+    runMutation(async () => {
+      const created = await api.createRoom(name, color)
+      setDbRooms((prev) => [...prev, created])
+    })
+
+  const handleUpdateRoom = (
+    id: number,
+    changes: { name?: string; color?: string | null; isActive?: boolean },
+  ) =>
+    runMutation(async () => {
+      const updated = await api.updateRoom(id, changes)
+      setDbRooms((prev) => prev.map((r) => (r.id === id ? updated : r)))
+    })
+
+  const handleDeleteRoom = (id: number) =>
+    runMutation(async () => {
+      const result = await api.deleteRoom(id)
+      if (result.deleted) {
+        setDbRooms((prev) => prev.filter((r) => r.id !== id))
+      } else {
+        setDbRooms((prev) => prev.map((r) => (r.id === id ? result.room : r)))
+      }
+    })
 
   const value: AppDataContextValue = {
     user,
@@ -210,6 +239,9 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
     handleLogPayment,
     handleAddFee,
     handleUpdateTeacherRate,
+    handleAddRoom,
+    handleUpdateRoom,
+    handleDeleteRoom,
   }
 
   return <AppDataContext.Provider value={value}>{children}</AppDataContext.Provider>

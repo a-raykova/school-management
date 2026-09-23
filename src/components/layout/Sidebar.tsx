@@ -20,6 +20,7 @@ const navItems: { id: NavPage; label: string; icon: string }[] = [
   { id: 'hours',         label: 'Teacher Hours', icon: '/assignment.png' },
   { id: 'payments',      label: 'Payments',      icon: '/dollar.png' },
   { id: 'announcements', label: 'Announcements', icon: '/announcement.png' },
+  { id: 'manage',        label: 'Manage',        icon: '/setting.png' },
 ]
 
 export default function Sidebar({ user }: SidebarProps) {
@@ -61,6 +62,7 @@ export default function Sidebar({ user }: SidebarProps) {
           .filter(item =>
             (item.id !== 'hours'    || user.role === 'admin') &&
             (item.id !== 'payments' || user.role === 'admin') &&
+            (item.id !== 'manage'   || user.role === 'admin') &&
             (item.id !== 'week'     || user.role !== 'admin')
           )
           .map((item) => (

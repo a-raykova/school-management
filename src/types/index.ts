@@ -18,7 +18,8 @@ export type NavPage =
   | 'hours'
   | 'payments'    
   | 'announcements'
-  | 'profile' 
+  | 'profile'
+  | 'manage'
 
 export interface Room {
   id: number

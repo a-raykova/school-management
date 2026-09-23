@@ -13,29 +13,31 @@ function getTodayName(): string {
 
 export function computeRooms(
   schedule: ScheduleEntry[],
-  dbRooms: { id: number; name: string; color: string | null }[]
+  dbRooms: { id: number; name: string; color: string | null; isActive: boolean }[]
 ): Room[] {
   const now       = getCurrentTimeString()
   const today     = getTodayName()
   const weekStart = getWeekStart(new Date())
 
-  return dbRooms.map(room => {
-    const activeEntry = schedule.find(
-      e =>
-        e.room === room.name &&
-        e.day === today &&
-        e.start <= now &&
-        e.end > now &&
-        entryOccursInWeek(e, weekStart)
-    )
+  return dbRooms
+    .filter(room => room.isActive)
+    .map(room => {
+      const activeEntry = schedule.find(
+        e =>
+          e.room === room.name &&
+          e.day === today &&
+          e.start <= now &&
+          e.end > now &&
+          entryOccursInWeek(e, weekStart)
+      )
 
-    return {
-      id:      room.id,
-      name:    room.name,
-      free:    !activeEntry,
-      subject: activeEntry?.subject,
-      teacher: activeEntry?.teacher,
-      time:    activeEntry ? `${activeEntry.start} – ${activeEntry.end}` : undefined,
-    }
-  })
+      return {
+        id:      room.id,
+        name:    room.name,
+        free:    !activeEntry,
+        subject: activeEntry?.subject,
+        teacher: activeEntry?.teacher,
+        time:    activeEntry ? `${activeEntry.start} – ${activeEntry.end}` : undefined,
+      }
+    })
 }

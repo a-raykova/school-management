@@ -90,7 +90,7 @@ interface ScheduleProps {
   onEdit:   (entry: ScheduleEntry) => void
   user:     CurrentUser
   teachers: string[]
-  rooms:    { id: number; name: string; color: string | null }[]
+  rooms:    { id: number; name: string; color: string | null; isActive: boolean }[]
 }
 
 const blankForm = {
@@ -178,7 +178,8 @@ export default function Schedule({ schedule, onAdd, onRemove, onRemoveOccurrence
 
   const openAdd = () => {
     setEditEntry(null)
-    setForm({ ...blankForm, room: rooms[0]?.name ?? '', teacher: user.role === 'admin' ? teachers[0] : `${user.firstName} ${user.lastName}` })
+    const firstActiveRoom = rooms.find(r => r.isActive)?.name ?? ''
+    setForm({ ...blankForm, room: firstActiveRoom, teacher: user.role === 'admin' ? teachers[0] : `${user.firstName} ${user.lastName}` })
     setModalOpen(true)
   }
 
@@ -384,7 +385,13 @@ export default function Schedule({ schedule, onAdd, onRemove, onRemoveOccurrence
           <div>
             <label className={labelCls}>Room</label>
             <select value={form.room} onChange={e => { setForm({ ...form, room: e.target.value }); setRoomError(null) }} className={inputCls}>
-              {rooms.map(r => <option key={r.name}>{r.name}</option>)}
+              {rooms
+                .filter(r => r.isActive || r.name === form.room)
+                .map(r => (
+                  <option key={r.name} value={r.name}>
+                    {r.name}{!r.isActive ? ' (archived)' : ''}
+                  </option>
+                ))}
             </select>
           </div>
           <div>

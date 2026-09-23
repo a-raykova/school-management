@@ -41,8 +41,34 @@ export function updateTeacherRate(id: number, honorariumRate: number | null) {
   })
 }
 
+export type DbRoom = { id: number; name: string; color: string | null; isActive: boolean }
+
 export function fetchRooms() {
-  return request<{ id: number; name: string; color: string | null }[]>('/api/rooms')
+  return request<DbRoom[]>('/api/rooms')
+}
+
+export function createRoom(name: string, color?: string | null) {
+  return request<DbRoom>('/api/rooms', {
+    method: 'POST',
+    body: JSON.stringify({ name, color }),
+  })
+}
+
+export function updateRoom(
+  id: number,
+  changes: { name?: string; color?: string | null; isActive?: boolean },
+) {
+  return request<DbRoom>(`/api/rooms/${id}`, {
+    method: 'PATCH',
+    body: JSON.stringify(changes),
+  })
+}
+
+export function deleteRoom(id: number) {
+  return request<
+    | { deleted: true }
+    | { deleted: false; archived: true; room: DbRoom; classCount: number }
+  >(`/api/rooms/${id}`, { method: 'DELETE' })
 }
 
 export function createScheduleEntry(entry: ScheduleCreateInput) {
