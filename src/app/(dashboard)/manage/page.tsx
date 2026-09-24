@@ -5,7 +5,7 @@ import { useAppData } from '@/providers/AppDataProvider'
 import RoleGuard from '@/components/layout/RoleGuard'
 
 export default function ManagePage() {
-  const { schedule, dbRooms, handleAddRoom, handleUpdateRoom, handleDeleteRoom } = useAppData()
+  const { schedule, dbRooms, handleAddRoom, handleUpdateRoom, handleDeleteRoom, teachersList, handleAddTeacher, handleUpdateTeacher, handleDeleteTeacher, } = useAppData()
 
   return (
     <RoleGuard allow="admin">
@@ -15,6 +15,10 @@ export default function ManagePage() {
         onAddRoom={handleAddRoom}
         onUpdateRoom={handleUpdateRoom}
         onDeleteRoom={handleDeleteRoom}
+        teachers={teachersList}
+        onAddTeacher={handleAddTeacher}
+        onUpdateTeacher={handleUpdateTeacher}
+        onDeleteTeacher={handleDeleteTeacher}
       />
     </RoleGuard>
   )

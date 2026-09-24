@@ -34,6 +34,43 @@ export function fetchTeachers() {
   return request<TeacherOption[]>('/api/teachers')
 }
 
+export function createTeacher(input: {
+  firstName: string
+  lastName: string
+  email: string
+  subtitle?: string | null
+  honorariumRate?: number | null
+}) {
+  return request<TeacherOption>('/api/teachers', {
+    method: 'POST',
+    body: JSON.stringify(input),
+  })
+}
+
+export function updateTeacher(
+  id: number,
+  changes: {
+    firstName?: string
+    lastName?: string
+    email?: string
+    subtitle?: string | null
+    isActive?: boolean
+    honorariumRate?: number | null
+  },
+) {
+  return request<TeacherOption>(`/api/teachers/${id}`, {
+    method: 'PATCH',
+    body: JSON.stringify(changes),
+  })
+}
+
+export function deleteTeacher(id: number) {
+  return request<
+    | { deleted: true }
+    | { deleted: false; archived: true; teacher: TeacherOption; classCount: number }
+  >(`/api/teachers/${id}`, { method: 'DELETE' })
+}
+
 export function updateTeacherRate(id: number, honorariumRate: number | null) {
   return request<TeacherOption>(`/api/teachers/${id}`, {
     method: 'PATCH',

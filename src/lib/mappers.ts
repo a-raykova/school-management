@@ -16,6 +16,7 @@ import type {
   ScheduleEntry,
   Student,
   UserRole,
+  TeacherOption
 } from '@/types'
 
 const WEEKDAY_TO_UI: Record<Weekday, string> = {
@@ -233,11 +234,17 @@ export function toTeacherOption(row: {
   id: number
   firstName: string
   lastName: string
+  email: string
+  subtitle: string | null
+  isActive: boolean
   honorariumRate: { toNumber(): number } | number | null
-}): { id: number; name: string; honorariumRate: number | null } {
+}): TeacherOption {
   return {
     id: row.id,
     name: fullName(row.firstName, row.lastName),
+    email: row.email,
+    subtitle: row.subtitle,
+    isActive: row.isActive,
     honorariumRate:
       row.honorariumRate == null
         ? null

@@ -48,6 +48,25 @@ interface AppDataContextValue {
   ) => Promise<void>
   handleAddFee: (studentId: number, amount: number, note?: string) => Promise<void>
   handleUpdateTeacherRate: (teacherId: number, honorariumRate: number | null) => Promise<void>
+  handleAddTeacher: (input: {
+    firstName: string
+    lastName: string
+    email: string
+    subtitle?: string | null
+    honorariumRate?: number | null
+  }) => Promise<void>
+  handleUpdateTeacher: (
+    id: number,
+    changes: {
+      firstName?: string
+      lastName?: string
+      email?: string
+      subtitle?: string | null
+      isActive?: boolean
+      honorariumRate?: number | null
+    },
+  ) => Promise<void>
+  handleDeleteTeacher: (id: number) => Promise<void>
   handleAddRoom: (name: string, color?: string | null) => Promise<void>
   handleUpdateRoom: (id: number, changes: { name?: string; color?: string | null; isActive?: boolean }) => Promise<void>
   handleDeleteRoom: (id: number) => Promise<void>
@@ -193,6 +212,44 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
       const updated = await api.updateTeacherRate(teacherId, honorariumRate)
       setTeachersList((prev) => prev.map((t) => (t.id === teacherId ? updated : t)))
     })
+
+  const handleAddTeacher = (input: {
+    firstName: string
+    lastName: string
+    email: string
+    subtitle?: string | null
+    honorariumRate?: number | null
+  }) =>
+    runMutation(async () => {
+      const created = await api.createTeacher(input)
+      setTeachersList((prev) => [...prev, created])
+    })
+
+  const handleUpdateTeacher = (
+    id: number,
+    changes: {
+      firstName?: string
+      lastName?: string
+      email?: string
+      subtitle?: string | null
+      isActive?: boolean
+      honorariumRate?: number | null
+    },
+  ) =>
+    runMutation(async () => {
+      const updated = await api.updateTeacher(id, changes)
+      setTeachersList((prev) => prev.map((t) => (t.id === id ? updated : t)))
+    })
+
+  const handleDeleteTeacher = (id: number) =>
+    runMutation(async () => {
+      const result = await api.deleteTeacher(id)
+      if (result.deleted) {
+        setTeachersList((prev) => prev.filter((t) => t.id !== id))
+      } else {
+        setTeachersList((prev) => prev.map((t) => (t.id === id ? result.teacher : t)))
+      }
+    })
   
   const handleAddRoom = (name: string, color?: string | null) =>
     runMutation(async () => {
@@ -242,6 +299,9 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
     handleAddRoom,
     handleUpdateRoom,
     handleDeleteRoom,
+    handleAddTeacher,
+    handleUpdateTeacher,
+    handleDeleteTeacher,
   }
 
   return <AppDataContext.Provider value={value}>{children}</AppDataContext.Provider>

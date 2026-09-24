@@ -101,6 +101,9 @@ export interface TeacherHours {
 export interface TeacherOption {
   id: number
   name: string
+  email: string
+  subtitle: string | null
+  isActive: boolean
   // €/hour paid for overtime classes. null = not set yet by admin.
   honorariumRate: number | null
 }

@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useMemo, useEffect } from 'react'
-import { ScheduleEntry, RecurrenceType, CurrentUser } from '@/types'
+import { ScheduleEntry, RecurrenceType, CurrentUser, TeacherOption } from '@/types'
 import Modal, { ModalFooter } from '@/components/layout/Modal'
 import { ALL_DAYS, DAY_SHORT, RECURRENCE_LABELS, inputCls, labelCls } from '@/constants'
 import { toISO } from '@/utils/date'
@@ -89,7 +89,7 @@ interface ScheduleProps {
   onRemoveOccurrence: (id: number, date: string) => void 
   onEdit:   (entry: ScheduleEntry) => void
   user:     CurrentUser
-  teachers: string[]
+  teachers: TeacherOption[]
   rooms:    { id: number; name: string; color: string | null; isActive: boolean }[]
 }
 
@@ -135,7 +135,7 @@ export default function Schedule({ schedule, onAdd, onRemove, onRemoveOccurrence
   }
 
   const usedRooms = useMemo(() => rooms.filter(r => schedule.some(e => e.room === r.name)).map(r => r.name), [schedule, rooms])
-  const usedTeachers = useMemo(() => teachers.filter(t => schedule.some(e => e.teacher === t)), [schedule, teachers])
+  const usedTeachers = useMemo(() => teachers.filter(t => schedule.some(e => e.teacher === t.name)).map(t => t.name), [schedule, teachers])
   const hasActiveFilters = activeRooms.size > 0 || activeTeachers.size > 0
 
   const clearRooms    = () => setActiveRooms(new Set())
@@ -179,7 +179,8 @@ export default function Schedule({ schedule, onAdd, onRemove, onRemoveOccurrence
   const openAdd = () => {
     setEditEntry(null)
     const firstActiveRoom = rooms.find(r => r.isActive)?.name ?? ''
-    setForm({ ...blankForm, room: firstActiveRoom, teacher: user.role === 'admin' ? teachers[0] : `${user.firstName} ${user.lastName}` })
+    const firstActiveTeacher = teachers.find(t => t.isActive)?.name ?? ''
+    setForm({ ...blankForm, room: firstActiveRoom, teacher: user.role === 'admin' ? firstActiveTeacher : `${user.firstName} ${user.lastName}` })
     setModalOpen(true)
   }
 
@@ -398,7 +399,13 @@ export default function Schedule({ schedule, onAdd, onRemove, onRemoveOccurrence
             <label className={labelCls}>Teacher</label>
             {user.role === 'admin' ? (
               <select value={form.teacher} onChange={e => setForm({ ...form, teacher: e.target.value })} className={inputCls}>
-                {teachers.map(t => <option key={t}>{t}</option>)}
+                {teachers
+                  .filter(t => t.isActive || t.name === form.teacher)
+                  .map(t => (
+                    <option key={t.name} value={t.name}>
+                      {t.name}{!t.isActive ? ' (archived)' : ''}
+                    </option>
+                  ))}
               </select>
             ) : (
               <div className={`${inputCls} bg-gray-50 text-gray-500 cursor-not-allowed`}>

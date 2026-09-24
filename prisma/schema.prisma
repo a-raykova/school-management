@@ -46,6 +46,7 @@ model User {
   firstName    String
   lastName     String
   subtitle     String?
+  isActive Boolean @default(true)
 
   /// €/hour paid for this teacher's overtime classes. Null = admin hasn't set a rate yet.
   honorariumRate Decimal? @db.Decimal(10, 2)

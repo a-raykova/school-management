@@ -25,7 +25,7 @@ export default function SchedulePage() {
       onRemoveOccurrence={handleRemoveOccurrence}
       onEdit={handleEditSchedule}
       user={user}
-      teachers={teachersList.map((t) => t.name)}
+      teachers={teachersList}
       rooms={dbRooms}
     />
   )
