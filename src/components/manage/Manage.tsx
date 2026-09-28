@@ -1,4 +1,7 @@
 'use client'
+import { StatusBadge } from './StatusBadge'
+import { RowActions } from './RowActions'
+import { FormError } from './FormError'
 
 import { useState } from 'react'
 import { ScheduleEntry, TeacherOption } from '@/types'
@@ -172,6 +175,8 @@ export default function Manage({
         await onAddTeacher(payload)
       }
       closeTeacherModal()
+    } catch (e) {
+      setTeacherFormError(e instanceof Error ? e.message : 'Failed to save teacher')
     } finally {
       setTeacherSaving(false)
     }
@@ -235,36 +240,14 @@ export default function Manage({
                         <td className="py-2.5 text-gray-600">{teacher.email}</td>
                         <td className="py-2.5 text-gray-600">{count}</td>
                         <td className="py-2.5">
-                          {teacher.isActive ? (
-                            <span className="text-[11px] font-medium text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full">Active</span>
-                          ) : (
-                            <span className="text-[11px] font-medium text-gray-500 bg-gray-100 px-2 py-0.5 rounded-full">Archived</span>
-                          )}
+                          <StatusBadge active={teacher.isActive} />
                         </td>
                         <td className="py-2.5">
-                          <div className="flex justify-end gap-1.5">
-                            <button
-                              onClick={() => openEditTeacher(teacher)}
-                              className="px-2.5 py-1 rounded text-[11px] text-gray-600 bg-gray-100 hover:bg-gray-200 transition-colors"
-                            >
-                              Edit
-                            </button>
-                            {teacher.isActive ? (
-                              <button
-                                onClick={() => handleDeleteTeacher(teacher)}
-                                className="px-2.5 py-1 rounded text-[11px] text-red-600 bg-red-50 hover:bg-red-100 border border-red-200 transition-colors"
-                              >
-                                Delete
-                              </button>
-                            ) : (
-                              <button
-                                onClick={() => handleRestoreTeacher(teacher)}
-                                className="px-2.5 py-1 rounded text-[11px] text-blue-600 bg-blue-50 hover:bg-blue-100 border border-blue-200 transition-colors"
-                              >
-                                Restore
-                              </button>
-                            )}
-                          </div>
+                          <RowActions
+                            isActive={teacher.isActive}
+                            onEdit={() => openEditTeacher(teacher)}
+                            onDeleteOrRestore={() => teacher.isActive ? handleDeleteTeacher(teacher) : handleRestoreTeacher(teacher)}
+                          />
                         </td>
                       </tr>
                     )
@@ -316,36 +299,14 @@ export default function Manage({
                         </td>
                         <td className="py-2.5 text-gray-600">{count}</td>
                         <td className="py-2.5">
-                          {room.isActive ? (
-                            <span className="text-[11px] font-medium text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full">Active</span>
-                          ) : (
-                            <span className="text-[11px] font-medium text-gray-500 bg-gray-100 px-2 py-0.5 rounded-full">Archived</span>
-                          )}
+                          <StatusBadge active={room.isActive} />
                         </td>
                         <td className="py-2.5">
-                          <div className="flex justify-end gap-1.5">
-                            <button
-                              onClick={() => openEdit(room)}
-                              className="px-2.5 py-1 rounded text-[11px] text-gray-600 bg-gray-100 hover:bg-gray-200 transition-colors"
-                            >
-                              Edit
-                            </button>
-                            {room.isActive ? (
-                              <button
-                                onClick={() => handleDelete(room)}
-                                className="px-2.5 py-1 rounded text-[11px] text-red-600 bg-red-50 hover:bg-red-100 border border-red-200 transition-colors"
-                              >
-                                Delete
-                              </button>
-                            ) : (
-                              <button
-                                onClick={() => handleRestore(room)}
-                                className="px-2.5 py-1 rounded text-[11px] text-blue-600 bg-blue-50 hover:bg-blue-100 border border-blue-200 transition-colors"
-                              >
-                                Restore
-                              </button>
-                            )}
-                          </div>
+                          <RowActions
+                            isActive={room.isActive}
+                            onEdit={() => openEdit(room)}
+                            onDeleteOrRestore={() => room.isActive ? handleDelete(room) : handleRestore(room)}
+                          />
                         </td>
                       </tr>
                     )
@@ -380,12 +341,7 @@ export default function Manage({
             />
           </div>
         </div>
-        {nameError && (
-          <div className="flex items-start mt-4 gap-2 px-3 py-2.5 rounded-lg bg-red-50 border border-red-200 text-red-700">
-            <span className="text-[13px] shrink-0">⚠️</span>
-            <span className="text-[12px] leading-snug">{nameError}</span>
-          </div>
-        )}
+          {nameError && <FormError message={nameError} />}
         <ModalFooter onCancel={closeModal} onConfirm={handleSave} confirmLabel={saving ? 'Saving…' : (editRoom ? 'Save changes' : 'Add room')} />
       </Modal>
 
@@ -435,12 +391,7 @@ export default function Manage({
             />
           </div>
         </div>
-        {teacherFormError && (
-          <div className="flex items-start mt-4 gap-2 px-3 py-2.5 rounded-lg bg-red-50 border border-red-200 text-red-700">
-            <span className="text-[13px] shrink-0">⚠️</span>
-            <span className="text-[12px] leading-snug">{teacherFormError}</span>
-          </div>
-        )}
+        {teacherFormError && <FormError message={teacherFormError} />}
         <ModalFooter
           onCancel={closeTeacherModal}
           onConfirm={handleSaveTeacher}

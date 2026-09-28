@@ -1,6 +1,7 @@
 import { prisma } from '@/lib/prisma'
 import { jsonError, jsonOk, parseJsonBody } from '@/lib/api-response'
 import { requireAdmin } from '@/lib/require-admin'
+import { archiveOrDeleteIfUsed } from '@/lib/archive-or-delete'
 
 type RouteContext = { params: { id: string } }
 
@@ -56,16 +57,12 @@ export async function DELETE(request: Request, { params }: RouteContext) {
   const existing = await prisma.room.findUnique({ where: { id: roomId } })
   if (!existing) return jsonError('Room not found', 404)
 
-  const classCount = await prisma.scheduleEntry.count({ where: { roomId } })
-
-  if (classCount === 0) {
-    await prisma.room.delete({ where: { id: roomId } })
-    return jsonOk({ deleted: true })
-  }
-
-  const archived = await prisma.room.update({
-    where: { id: roomId },
-    data: { isActive: false },
+  const result = await archiveOrDeleteIfUsed({
+    countWhere: { roomId },
+    deleteFn: () => prisma.room.delete({ where: { id: roomId } }),
+    archiveFn: () => prisma.room.update({ where: { id: roomId }, data: { isActive: false } }),
   })
-  return jsonOk({ deleted: false, archived: true, room: archived, classCount })
+
+  if (result.deleted) return jsonOk({ deleted: true })
+  return jsonOk({ deleted: false, archived: true, room: result.row, classCount: result.classCount })
 }

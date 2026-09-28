@@ -2,6 +2,7 @@ import { prisma } from '@/lib/prisma'
 import { jsonError, jsonOk, parseJsonBody } from '@/lib/api-response'
 import { requireAdmin } from '@/lib/require-admin'
 import { toTeacherOption } from '@/lib/mappers'
+import { archiveOrDeleteIfUsed } from '@/lib/archive-or-delete'
 
 type RouteContext = { params: { id: string } }
 
@@ -110,17 +111,12 @@ export async function DELETE(request: Request, { params }: RouteContext) {
   })
   if (!existing) return jsonError('Teacher not found', 404)
 
-  const classCount = await prisma.scheduleEntry.count({ where: { teacherId } })
-
-  if (classCount === 0) {
-    await prisma.user.delete({ where: { id: teacherId } })
-    return jsonOk({ deleted: true })
-  }
-
-  const archived = await prisma.user.update({
-    where: { id: teacherId },
-    data: { isActive: false },
-    select: teacherSelect,
+  const result = await archiveOrDeleteIfUsed({
+    countWhere: { teacherId },
+    deleteFn: () => prisma.user.delete({ where: { id: teacherId } }),
+    archiveFn: () => prisma.user.update({ where: { id: teacherId }, data: { isActive: false }, select: teacherSelect }),
   })
-  return jsonOk({ deleted: false, archived: true, teacher: toTeacherOption(archived), classCount })
+
+  if (result.deleted) return jsonOk({ deleted: true })
+  return jsonOk({ deleted: false, archived: true, teacher: toTeacherOption(result.row), classCount: result.classCount })
 }

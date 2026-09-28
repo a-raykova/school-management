@@ -8,6 +8,7 @@ import {
 } from '@/lib/mappers'
 import type { ScheduleEntry } from '@/types'
 import type { Weekday } from '@/generated/prisma/client'
+import { addWeeks, dateForDayInWeek, entryOccursInWeek, getWeekStart } from '@/utils/schedule'
 
 export async function resolveScheduleRelations(input: ScheduleCreateInput) {
   const teacher = await findTeacherByFullName(input.teacher)
@@ -28,25 +29,66 @@ export async function resolveScheduleRelations(input: ScheduleCreateInput) {
   return { teacher, room, weekday }
 }
 
+const CONFLICT_HORIZON_WEEKS = 52
+
+// same start-of-week calculation entryOccursInWeek uses internally for anchors
+function anchorWeekStart(anchorDate: string): Date {
+  const d = new Date(anchorDate)
+  d.setHours(0, 0, 0, 0)
+  return getWeekStart(d)
+}
+
 async function assertNoRoomConflict(
   roomId: number,
   weekday: Weekday,
-  start: string,
-  end: string,
+  input: ScheduleCreateInput,
   excludeEntryId?: number,
 ) {
-  const conflict = await prisma.scheduleEntry.findFirst({
+  // Step 1: cheap database filter. Same room, same weekday, overlapping times.
+  const rows = await prisma.scheduleEntry.findMany({
     where: {
       roomId,
       weekday,
       id: excludeEntryId ? { not: excludeEntryId } : undefined,
-      // overlap test: existing.start < new.end AND existing.end > new.start
-      startTime: { lt: end },
-      endTime: { gt: start },
+      startTime: { lt: input.end },
+      endTime: { gt: input.start },
     },
+    include: scheduleInclude,
   })
-  if (conflict) {
-    throw new Error(`Room is already booked ${conflict.startTime}–${conflict.endTime} on this day`)
+  if (rows.length === 0) return
+
+  // Step 2: recurrence-aware check. It's only a real conflict if both
+  // classes actually occur in the same week.
+  const candidate: ScheduleEntry = { id: -1, ...input, exceptions: [] }
+  const candidateStart = anchorWeekStart(candidate.anchorDate)
+  let earliest: { week: Date; existing: ScheduleEntry } | null = null
+
+  for (const row of rows) {
+    const existing = toScheduleEntry(row)
+
+    // neither class occurs before its own anchor date, so start from the later one
+    const existingStart = anchorWeekStart(existing.anchorDate)
+    const firstWeek = existingStart > candidateStart ? existingStart : candidateStart
+
+    for (let i = 0; i < CONFLICT_HORIZON_WEEKS; i++) {
+      const week = addWeeks(firstWeek, i)
+      if (earliest && week >= earliest.week) break // can't beat the clash we already have
+      if (entryOccursInWeek(existing, week) && entryOccursInWeek(candidate, week)) {
+        earliest = { week, existing }
+        break
+      }
+    }
+  }
+
+  if (earliest) {
+    const clashDate = dateForDayInWeek(earliest.week, earliest.existing.day).toLocaleDateString('en-GB', {
+      day: 'numeric',
+      month: 'long',
+      year: 'numeric',
+    })
+    throw new Error(
+      `Room is already booked for "${earliest.existing.subject}" from ${earliest.existing.start} to ${earliest.existing.end} on ${clashDate}`,
+    )
   }
 }
 
@@ -54,7 +96,7 @@ export async function createScheduleEntry(
   input: ScheduleCreateInput,
 ): Promise<ScheduleEntry> {
   const { teacher, room, weekday } = await resolveScheduleRelations(input)
-  await assertNoRoomConflict(room.id, weekday, input.start, input.end)
+  await assertNoRoomConflict(room.id, weekday, input)
 
   const row = await prisma.scheduleEntry.create({
     data: {
@@ -81,7 +123,7 @@ export async function updateScheduleEntry(
   input: ScheduleCreateInput,
 ): Promise<ScheduleEntry> {
   const { teacher, room, weekday } = await resolveScheduleRelations(input)
-  await assertNoRoomConflict(room.id, weekday, input.start, input.end, id)
+  await assertNoRoomConflict(room.id, weekday, input, id)
 
   const row = await prisma.scheduleEntry.update({
     where: { id },

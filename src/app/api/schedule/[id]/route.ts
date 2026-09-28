@@ -53,8 +53,9 @@ export async function PATCH(request: Request, { params }: RouteContext) {
     await createScheduleUpdateAnnouncement(prev, body, dbUser.id, dbUser.role)
     return jsonOk(updated)
   } catch (e) {
-    const message = e instanceof Error ? e.message : 'Failed to update schedule entry'
-    return jsonError(message, 404)
+    const message = e instanceof Error ? e.message : 'Failed to save schedule entry' 
+    const status = message.startsWith('Room is already booked') ? 409 : 404
+    return jsonError(message, status)
   }
 }
 

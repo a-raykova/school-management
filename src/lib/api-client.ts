@@ -72,10 +72,7 @@ export function deleteTeacher(id: number) {
 }
 
 export function updateTeacherRate(id: number, honorariumRate: number | null) {
-  return request<TeacherOption>(`/api/teachers/${id}`, {
-    method: 'PATCH',
-    body: JSON.stringify({ honorariumRate }),
-  })
+  return updateTeacher(id, { honorariumRate })
 }
 
 export type DbRoom = { id: number; name: string; color: string | null; isActive: boolean }

@@ -25,69 +25,69 @@ function isEditLocked(entry: ScheduleEntry, today: Date, weekStart: Date, now: D
 }
 
 
-function hasRoomConflict(
-  schedule: ScheduleEntry[],
-  form: typeof blankForm,
-  weekStart: Date,
-  editingId?: number,
-): { entry: ScheduleEntry; clashDate: string } | null {
-  const [cs, ce] = [form.start, form.end].map(t => {
-    const [h, m] = t.split(':').map(Number)
-    return h * 60 + m
-  })
+// function hasRoomConflict(
+//   schedule: ScheduleEntry[],
+//   form: typeof blankForm,
+//   weekStart: Date,
+//   editingId?: number,
+// ): { entry: ScheduleEntry; clashDate: string } | null {
+//   const [cs, ce] = [form.start, form.end].map(t => {
+//     const [h, m] = t.split(':').map(Number)
+//     return h * 60 + m
+//   })
 
-  const weeks = Array.from({ length: 52 }, (_, i) => addWeeks(weekStart, i))
+//   const weeks = Array.from({ length: 52 }, (_, i) => addWeeks(weekStart, i))
 
-  for (const entry of schedule) {
-    if (entry.id === editingId)   continue
-    if (entry.room !== form.room) continue
-    if (entry.day  !== form.day)  continue
+//   for (const entry of schedule) {
+//     if (entry.id === editingId)   continue
+//     if (entry.room !== form.room) continue
+//     if (entry.day  !== form.day)  continue
 
-    const [es, ee] = [entry.start, entry.end].map(t => {
-      const [h, m] = t.split(':').map(Number)
-      return h * 60 + m
-    })
+//     const [es, ee] = [entry.start, entry.end].map(t => {
+//       const [h, m] = t.split(':').map(Number)
+//       return h * 60 + m
+//     })
 
-    if (!(cs < ee && ce > es)) continue
+//     if (!(cs < ee && ce > es)) continue
 
-    const candidate = {
-      id:         -1,
-      subject:    form.subject,
-      duration:   0,
-      teacher:    form.teacher,
-      day:        form.day,
-      start:      form.start,
-      end:        form.end,
-      room:       form.room,
-      recurrence: form.recurrence,
-      anchorDate: toISO(dateForDayInWeek(weekStart, form.day)),
-      exceptions: [],
-      isOvertime: form.isOvertime,
-    } as ScheduleEntry
+//     const candidate = {
+//       id:         -1,
+//       subject:    form.subject,
+//       duration:   0,
+//       teacher:    form.teacher,
+//       day:        form.day,
+//       start:      form.start,
+//       end:        form.end,
+//       room:       form.room,
+//       recurrence: form.recurrence,
+//       anchorDate: toISO(dateForDayInWeek(weekStart, form.day)),
+//       exceptions: [],
+//       isOvertime: form.isOvertime,
+//     } as ScheduleEntry
 
-    const clashWeek = weeks.find(w =>
-      entryOccursInWeek(entry, w) && entryOccursInWeek(candidate, w)
-    )
+//     const clashWeek = weeks.find(w =>
+//       entryOccursInWeek(entry, w) && entryOccursInWeek(candidate, w)
+//     )
 
-    if (clashWeek) {
-      const clashDate = dateForDayInWeek(clashWeek, entry.day)
-      return {
-        entry,
-        clashDate: clashDate.toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' }),
-      }
-    }
-  }
-  return null
-}
+//     if (clashWeek) {
+//       const clashDate = dateForDayInWeek(clashWeek, entry.day)
+//       return {
+//         entry,
+//         clashDate: clashDate.toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' }),
+//       }
+//     }
+//   }
+//   return null
+// }
 
 /* ─────────────────────────── types ─────────────────────────────── */
-
+ 
 interface ScheduleProps {
   schedule: ScheduleEntry[]
-  onAdd:    (entry: Omit<ScheduleEntry, 'id'>) => void
+  onAdd: (entry: Omit<ScheduleEntry, 'id'>) => Promise<void>
   onRemove: (id: number) => void
   onRemoveOccurrence: (id: number, date: string) => void 
-  onEdit:   (entry: ScheduleEntry) => void
+  onEdit: (entry: ScheduleEntry) => Promise<void>
   user:     CurrentUser
   teachers: TeacherOption[]
   rooms:    { id: number; name: string; color: string | null; isActive: boolean }[]
@@ -201,35 +201,42 @@ export default function Schedule({ schedule, onAdd, onRemove, onRemoveOccurrence
 
   const closeModal = () => { setModalOpen(false); setEditEntry(null); setRoomError(null) }
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!form.subject.trim()) return
+
     const [sh, sm] = form.start.split(':').map(Number)
     const [eh, em] = form.end.split(':').map(Number)
     const durationH = Math.max(0.5, (eh * 60 + em - sh * 60 - sm) / 60)
-    const teacher   = user.role === 'admin' ? form.teacher : `${user.firstName} ${user.lastName}`
-    const conflict = hasRoomConflict(schedule, form, weekStart, editEntry?.id)
-    if (conflict) {
-      setRoomError(
-        `${conflict.entry.room} is already booked for "${conflict.entry.subject}" from ${conflict.entry.start} to ${conflict.entry.end} on ${conflict.clashDate}.`
-      )
-      return
-    }
-    setRoomError(null)
+
+    const teacher =
+      user.role === 'admin' ? form.teacher : `${user.firstName} ${user.lastName}`
+
     const base = {
-      subject:    form.subject.trim(),
-      day:        form.day,
-      start:      form.start,
-      end:        form.end,
-      duration:   durationH,
-      room:       form.room,
+      subject: form.subject.trim(),
+      day: form.day,
+      start: form.start,
+      end: form.end,
+      duration: durationH,
+      room: form.room,
       teacher,
       color: rooms.find(r => r.name === form.room)?.color ?? '#3b82f6',
       recurrence: form.recurrence,
       anchorDate: editEntry?.anchorDate ?? toISO(dateForDayInWeek(weekStart, form.day)),
       isOvertime: form.isOvertime,
     }
-    editEntry ? onEdit({ ...base, id: editEntry.id }) : onAdd(base)
-    closeModal()
+
+    setRoomError(null)
+
+    try {
+      if (editEntry) {
+        await onEdit({ ...base, id: editEntry.id })
+      } else {
+        await onAdd(base)
+      }
+      closeModal()
+    } catch (e) {
+      setRoomError(e instanceof Error ? e.message : 'Failed to save class')
+    }
   }
 
   const confirmDelete = (id: number) => { onRemove(id); setDeleteConfirm(null) }
@@ -476,7 +483,6 @@ export default function Schedule({ schedule, onAdd, onRemove, onRemoveOccurrence
                 <>
                   <p className="text-[12px] text-gray-500 mb-4">Remove this single-occuring class from the schedule?</p>
                   <div className="flex justify-center gap-2">
-                    <button onClick={() => setDeleteConfirm(null)} className="px-3.5 py-1.5 border border-gray-300 rounded-lg text-[12px] text-gray-600 hover:bg-gray-100 transition-colors">Cancel</button>
                     <button onClick={() => confirmDelete(deleteConfirm.id)} className="px-3.5 py-1.5 bg-red-600/80 text-white rounded-lg text-[12px] font-medium hover:bg-red-600 transition-colors">Remove</button>
                   </div>
                 </>

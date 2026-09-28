@@ -156,8 +156,13 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
     }
   }
 
+  const runMutationThrowing = async (fn: () => Promise<void>) => {
+    setError(null)
+    await fn() // no catch on purpose: the caller (the modal) handles the error
+  }
+
   const handleAddSchedule = (entry: ScheduleCreateInput) =>
-    runMutation(async () => {
+    runMutationThrowing(async () => {
       const created = await api.createScheduleEntry(entry)
       setSchedule((prev) => [...prev, created])
     })
@@ -177,7 +182,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
     })
 
   const handleEditSchedule = (updated: ScheduleEntry) =>
-    runMutation(async () => {
+    runMutationThrowing(async () => {
       const { id, exceptions: _ex, ...input } = updated
       const saved = await api.updateScheduleEntry(id, input)
       setSchedule((prev) => prev.map((e) => (e.id === id ? saved : e)))
@@ -208,10 +213,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
     })
 
   const handleUpdateTeacherRate = (teacherId: number, honorariumRate: number | null) =>
-    runMutation(async () => {
-      const updated = await api.updateTeacherRate(teacherId, honorariumRate)
-      setTeachersList((prev) => prev.map((t) => (t.id === teacherId ? updated : t)))
-    })
+    handleUpdateTeacher(teacherId, { honorariumRate })
 
   const handleAddTeacher = (input: {
     firstName: string
