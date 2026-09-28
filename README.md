@@ -56,3 +56,69 @@ WEBHOOK_SECRET=                      # Shared secret checked against the
                                       #   x-webhook-secret header on the
                                       #   Google Forms webhook
 ```
+
+## How It Works
+
+The application connects external data collection with an internal
+education management system.
+
+                    EXTERNAL SYSTEM
+                         │
+                         ▼
+                  ┌─────────────┐
+                  │ Google Form │
+                  └──────┬──────┘
+                         │
+                         ▼
+                  ┌─────────────┐
+                  │Google Sheets│
+                  └──────┬──────┘
+                         │
+                         ▼
+                  ┌─────────────┐
+                  │Apps Script  │
+                  │   Webhook   │
+                  └──────┬──────┘
+                         │
+                    Secure API
+                         │
+                         ▼
+              ┌─────────────────────┐
+              │   NEXT.JS / REACT   │
+              │                     │
+              │  Dashboard          │
+              │  Schedule           │
+              │  Teachers / Rooms   │
+              │  Students / Payments│
+              │  Reports            │
+              │  Settings           │
+              └──────────┬──────────┘
+                         │
+                    Prisma ORM
+                         │
+                         ▼
+              ┌─────────────────────┐
+              │ PostgreSQL /        │
+              │ Supabase            │
+              │                     │
+              │ Users               │
+              │ Teachers            │
+              │ Rooms               │
+              │ Classes             │
+              │ Schedule            │
+              │ Form Submissions    │
+              └─────────────────────┘
+
+Main Data Flow
+- Google Forms → Google Sheets → Google Apps Script → Webhook → Next.js → Prisma → PostgreSQL
+- The application uses Supabase for authentication and database infrastructure,
+while Next.js/React provides the user interface and application logic.
+
+User Roles
+- Admin — manages teachers, rooms, schedules, classes and system data.
+- Teacher — accesses their assigned classes, schedules and relevant information.
+
+External Integration
+- Google Forms and Google Sheets are used as an external data collection
+workflow. Google Apps Script processes the submitted information and sends
+it to the application through a protected webhook.
