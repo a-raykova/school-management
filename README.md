@@ -4,11 +4,22 @@ A Next.js web app for running the day-to-day admin of a small school or tutoring
 
 ## Tech stack
 
-- **Framework:** Next.js (App Router) + React, TypeScript
-- **Styling:** Tailwind CSS
-- **Auth:** Supabase Auth (`@supabase/ssr`), enforced via `middleware.ts`
-- **Database:** Prisma ORM (generated client checked into `src/generated/prisma`)
-- **Fonts:** `next/font/google` (Inter)
+- **Runtime:** Node.js - Version >= 22.12 (required by Prisma 7)
+- **Framework:** Next.js (App Router) - Version 14.2.5
+- **UI library:** React / React DOM - Version 18.3.1
+- **Language:** TypeScript - Version 5.9.3
+- **Styling:** Tailwind CSS + PostCSS - Versions 3.4 / 8.5.28
+- **Authentication:** Supabase Auth: @supabase/ssr + @supabase/supabase-js - Version 0.10 / 2.106
+- **ORM:** Prisma + @prisma/client (prisma-client generator) - Version 7.10.0
+- **DB driver:** @prisma/adapter-pg + pg (node-postgres) - Versions 7.10.0 / 8.23.0
+- **Database:** PostgreSQL (hosted on Supabase)
+- **Excel export:** SheetJS (xlsx) - Version 0.18.5
+- **Env loading:** dotenv - Version 17.4.2
+- **TS script runner:** tsx - Version 4.23.15
+- **Linting:** ESLint + eslint-config-next - Versions 8.57.1 / 14.2.5
+- **Fonts:** next/font/google (Inter) - bundled with Next.js
+- **External intake:** Google Forms + Google Sheets + Google Apps Script
+Note: Exact versions are taken from package-lock.json. Install with **npm ci** to get exactly these.
 
 ## Features
 
