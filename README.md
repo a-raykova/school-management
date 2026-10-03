@@ -18,7 +18,7 @@ A Next.js web app for running the day-to-day admin of a small school or tutoring
 - **TS script runner:** tsx - Version 4.23.15
 - **Linting:** ESLint + eslint-config-next - Versions 8.57.1 / 14.2.5
 - **Fonts:** next/font/google (Inter) - bundled with Next.js
-- **External intake:** Google Forms + Google Sheets + Google Apps Script
+- **External intake:** Google Forms + Google Sheets + Google Apps Script  
 Note: Exact versions are taken from package-lock.json. Install with **npm ci** to get exactly these.
 
 ## Features
