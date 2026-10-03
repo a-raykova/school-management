@@ -19,6 +19,7 @@ A Next.js web app for running the day-to-day admin of a small school or tutoring
 - **Linting:** ESLint + eslint-config-next - Versions 8.57.1 / 14.2.5
 - **Fonts:** next/font/google (Inter) - bundled with Next.js
 - **External intake:** Google Forms + Google Sheets + Google Apps Script  
+
 Note: Exact versions are taken from package-lock.json. Install with **npm ci** to get exactly these.
 
 ## Features
@@ -35,101 +36,141 @@ Note: Exact versions are taken from package-lock.json. Install with **npm ci** t
 
 ## Roles & access control
 
-Two roles: `ADMIN` and `TEACHER`.
+Two roles: `ADMIN` and `TEACHER`.  
 
-- `middleware.ts` redirects unauthenticated users to `/sign-in` (or returns `401` for API routes), based on a Supabase session cookie.
-- `requireAuth()` (`src/lib/require-auth.ts`) — any signed-in user with a matching `User` row.
-- `requireAdmin()` (`src/lib/require-admin.ts`) — signed-in **and** `role === 'ADMIN'`. Used to gate students, fees, and payments endpoints.
+How it's enforced:
+- `src/middleware.ts` checks the Supabase session cookie on every request. Unauthenticated users are redirected to `/sign-in`; unauthenticated API calls get `401 Unauthorized`. The webhook route is excluded so Google Apps Script can reach it.
+- `requireAuth()` (`src/lib/require-auth.ts`): any signed-in user who also has a matching row in the User table.
+- `requireAdmin()` (`src/lib/require-admin.ts`): signed in and `role === 'ADMIN'`. Used to gate the students, fees and payments endpoints.
+A Supabase auth user is linked to an app User row by email. Signing in with Supabase alone is not enough: the email must also exist in the User table.
 
-## Data model (Prisma)
+## Data model   
+Defined in `prisma/schema.prisma` (PostgreSQL), with the schema history in `prisma/migrations/`.
 
 | Model | Purpose |
 |---|---|
-| `User` | Admins and teachers (matched to a Supabase auth user by email) |
+| `User` | Admins and teachers (matched to a Supabase auth user by email). Holds an optional overtime `honorariumRate` |
 | `Room` | Physical rooms classes are held in |
-| `ScheduleEntry` | A class: subject, weekday, start/end time, teacher, room, recurrence, anchor date |
+| `ScheduleEntry` | A class: subject, weekday, start/end time, duration, teacher, room, recurrence, anchor date, overtime flag |
 | `ScheduleException` | A single cancelled occurrence of a recurring `ScheduleEntry` |
-| `Announcement` | School-wide or single-teacher-targeted notice |
+| `Announcement` | 	School-wide or single-teacher-targeted notice, with optional author |
 | `Student` | Parent/child info, payment method (cash/bank transfer) and schedule (full/split) |
 | `Fee` | A charge owed by a student |
-| `Payment` | A payment made by a student against fees |
-
-
-## Environment variables
-
-Inferred from the code — create a `.env.local` with:
-
-```
-DATABASE_URL=                        # Prisma connection string
-NEXT_PUBLIC_SUPABASE_URL=            # Supabase project URL
-NEXT_PUBLIC_SUPABASE_ANON_KEY=       # Supabase anon/public key
-WEBHOOK_SECRET=                      # Shared secret checked against the
-                                      #   x-webhook-secret header on the
-                                      #   Google Forms webhook
-```
+| `Payment` | A payment made by a student |
 
 ## How It Works
 
-The application connects external data collection with an internal
-education management system.
+The app connects an external data-collection workflow (Google Forms) with the internal school management system.
 
-                    EXTERNAL SYSTEM
-                         │
-                         ▼
-                  ┌─────────────┐
-                  │ Google Form │
-                  └──────┬──────┘
-                         │
-                         ▼
-                  ┌─────────────┐
-                  │Google Sheets│
-                  └──────┬──────┘
-                         │
-                         ▼
-                  ┌─────────────┐
-                  │Apps Script  │
-                  │   Webhook   │
-                  └──────┬──────┘
-                         │
-                    Secure API
-                         │
-                         ▼
-              ┌─────────────────────┐
-              │   NEXT.JS / REACT   │
-              │                     │
-              │  Dashboard          │
-              │  Schedule           │
-              │  Teachers / Rooms   │
-              │  Students / Payments│
-              │  Reports            │
-              │  Settings           │
-              └──────────┬──────────┘
-                         │
-                    Prisma ORM
-                         │
-                         ▼
-              ┌─────────────────────┐
-              │ PostgreSQL /        │
-              │ Supabase            │
-              │                     │
-              │ Users               │
-              │ Teachers            │
-              │ Rooms               │
-              │ Classes             │
-              │ Schedule            │
-              │ Form Submissions    │
-              └─────────────────────┘
+              EXTERNAL SYSTEM
+                     │
+                     ▼
+              ┌─────────────┐
+              │ Google Form │
+              └──────┬──────┘
+                     ▼
+              ┌─────────────┐
+              │Google Sheets│
+              └──────┬──────┘
+                     ▼
+              ┌─────────────┐
+              │ Apps Script │
+              │   Webhook   │
+              └──────┬──────┘
+                     │  POST + x-webhook-secret
+                     ▼
+          ┌─────────────────────┐        ┌───────────────┐
+          │   NEXT.JS / REACT   │◄──────►│ Supabase Auth │
+          │                     │        └───────────────┘
+          │  Dashboard          │
+          │  Rooms / Week       │
+          │  Schedule / Hours   │
+          │  Manage             │
+          │  Announcements      │
+          │  Payments           │
+          └──────────┬──────────┘
+                     │
+                Prisma ORM
+                     ▼
+          ┌─────────────────────┐
+          │ PostgreSQL          │
+          │ (Supabase)          │
+          │                     │
+          │ User · Room         │
+          │ ScheduleEntry       │
+          │ ScheduleException   │
+          │ Announcement        │
+          │ Student · Fee       │
+          │ Payment             │
+          └─────────────────────┘
 
 Main Data Flow
 - Google Forms → Google Sheets → Google Apps Script → Webhook → Next.js → Prisma → PostgreSQL
 - The application uses Supabase for authentication and database infrastructure,
 while Next.js/React provides the user interface and application logic.
 
-User Roles
-- Admin — manages teachers, rooms, schedules, classes and system data.
-- Teacher — accesses their assigned classes, schedules and relevant information.
+## Getting started 
 
-External Integration
-- Google Forms and Google Sheets are used as an external data collection
-workflow. Google Apps Script processes the submitted information and sends
-it to the application through a protected webhook.
+### Requirements
+
+- Node.js 22.12 or newer
+- A free [Supabase](https://supabase.com) account
+
+### 1. Clone and install
+
+```bash
+git clone https://github.com/<your-username>/<your-repo>.git
+cd <your-repo>
+npm ci
+```
+
+### 2. Create a Supabase project
+
+Create a new project on [supabase.com](https://supabase.com), then copy:
+
+- **Project URL** and **anon key**: from *Project Settings → API*
+- **Database connection string**: from the *Connect* button (use the *Direct* or *Session pooler* string)
+
+### 3. Add environment variables
+
+Create a `.env` file in the project root:
+
+```env
+DATABASE_URL="postgresql://postgres:<password>@<host>:5432/postgres"
+NEXT_PUBLIC_SUPABASE_URL="https://<project-ref>.supabase.co"
+NEXT_PUBLIC_SUPABASE_ANON_KEY="<your-anon-key>"
+WEBHOOK_SECRET="<any-long-random-string>"
+```
+
+### 4. Set up the database
+
+```bash
+npm run db:generate
+npx prisma migrate deploy
+```
+
+### 5. Create an admin account
+
+1. In Supabase, go to *Authentication → Users → Add user* and create a user (tick *Auto Confirm User*).
+2. Run `npm run db:studio`, open the `User` table and add a record with the **same email**, `role` = `ADMIN`, and your first and last name.
+
+### 6. Start the app
+
+```bash
+npm run dev
+```
+
+Open [http://localhost:3000](http://localhost:3000) and sign in.
+
+### Production build
+
+```bash
+npm run build
+npm start
+```
+
+### Optional: Google Form integration
+
+Have a Google Apps Script send a `POST` request to `https://<your-domain>/api/webhooks/google-forms` with the header `x-webhook-secret: <WEBHOOK_SECRET>` and the form answers as JSON. Each submission creates a new student. This only works on a deployed app, not on `localhost`.
+
+
