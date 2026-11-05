@@ -9,6 +9,9 @@ import { getWeekStart, addDays, addWeeks, dateForDayInWeek, entryOccursInWeek, i
 
 /* ─────────────────────────── constants ─────────────────────────── */
 
+const HOURS = Array.from({ length: 14 }, (_, i) => String(i + 7).padStart(2, '0'))   // 07–20
+const MINUTES = Array.from({ length: 12 }, (_, i) => String(i * 5).padStart(2, '0')) // 00–55
+
 // all schedule constants are moved to /constants/index.ts
 /* ─────────────────────────── helpers ───────────────────────────── */
 
@@ -22,6 +25,26 @@ function isEditLocked(entry: ScheduleEntry, today: Date, weekStart: Date, now: D
   classStart.setHours(h, m, 0, 0)
 
   return now.getTime() >= classStart.getTime() - 5 * 60 * 1000
+}
+
+function TimeSelect({ value, onChange, className, min }: { value: string; onChange: (v: string) => void; className?: string; min?: string }) {
+  const [h = '', m = ''] = value ? value.split(':') : []
+  const [minH = '', minM = ''] = min ? min.split(':') : []              
+  const hours = HOURS.filter(x => !minH || x >= minH)       
+  const minutes = MINUTES.filter(x => !minH || h !== minH || x > minM)             
+  return (
+    <div className="flex items-center gap-1">
+      <select value={h} onChange={e => onChange(`${e.target.value}:${m || '00'}`)} className={className}>
+        <option value="" disabled>HH</option>
+        {hours.map(x => <option key={x}>{x}</option>)}
+      </select>
+      <span>:</span>
+      <select value={m} onChange={e => onChange(`${h || '07'}:${e.target.value}`)} className={className}>
+        <option value="" disabled>MM</option>
+        {minutes.map(x => <option key={x}>{x}</option>)}
+      </select>
+    </div>
+  )
 }
 
 
@@ -380,14 +403,14 @@ export default function Schedule({ schedule, onAdd, onRemove, onRemoveOccurrence
               {ALL_DAYS.map(d => <option key={d}>{d}</option>)}
             </select>
           </div>
-          <div className="grid grid-cols-2 gap-2">
+          <div className="flex flex-col gap-2">
             <div>
               <label className={labelCls}>Start time</label>
-              <input type="time" value={form.start} onChange={e => { setForm({ ...form, start: e.target.value }); setRoomError(null) }} className={inputCls} />
+              <TimeSelect value={form.start} onChange={v => { setForm({ ...form, start: v, end: form.end > v ? form.end : '' }); setRoomError(null) }} className={inputCls} />
             </div>
             <div>
               <label className={labelCls}>End time</label>
-              <input type="time" value={form.end} onChange={e => { setForm({ ...form, end:   e.target.value }); setRoomError(null) }} className={inputCls} />
+              <TimeSelect value={form.end} min={form.start} onChange={v => { setForm({ ...form, end: v }); setRoomError(null) }} className={inputCls} />
             </div>
           </div>
           <div>

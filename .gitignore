@@ -38,4 +38,3 @@ next-env.d.ts
 
 # prisma (generated on install/build)
 /src/generated/prisma
-.env

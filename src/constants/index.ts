@@ -15,3 +15,5 @@ export const inputCls =
   'w-full px-2.5 py-1.5 rounded-lg text-[13px] focus:outline-none transition-colors ' +
   'bg-white border border-gray-300 text-gray-800 placeholder-gray-400 focus:border-blue-500'
 export const labelCls = 'block text-[11px] font-medium text-gray-500 uppercase tracking-wider mb-1'
+
+export const ACCOUNT_DEACTIVATED = 'Your account has been deactivated'

@@ -22,6 +22,8 @@ import type {
   TeacherOption,
 } from '@/types'
 import { computeRooms } from '@/utils/rooms'
+import { createClient } from '@/lib/supabase/client'
+import { ACCOUNT_DEACTIVATED } from '@/constants'
 
 interface AppDataContextValue {
   user: CurrentUser | null
@@ -128,6 +130,12 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
           setFees(feesData)
         }
       } catch (e) {
+        if (e instanceof Error && e.message === ACCOUNT_DEACTIVATED) {
+          await createClient().auth.signOut()
+          window.location.href = '/sign-in'
+          return
+        }
+        
         if (!cancelled) {
           setError(e instanceof Error ? e.message : 'Failed to load data')
         }

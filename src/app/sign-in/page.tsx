@@ -19,14 +19,26 @@ export default function SignInPage() {
   const handleSignIn = async () => {
     setLoading(true)
     setError(null)
+
     const { error } = await supabase.auth.signInWithPassword({ email, password })
     if (error) {
       setError(error.message)
       setLoading(false)
-    } else {
-      router.push('/')
-      router.refresh()
+      return
     }
+
+    // the password is correct, but the school may have deactivated this account
+    const res = await fetch('/api/users/current')
+    if (!res.ok) {
+      const data = await res.json().catch(() => null)
+      await supabase.auth.signOut()
+      setError(data?.error ?? 'Could not sign in')
+      setLoading(false)
+      return
+    }
+
+    router.push('/')
+    router.refresh()
   }
 
   const handleKeyDown = (e: React.KeyboardEvent) => {

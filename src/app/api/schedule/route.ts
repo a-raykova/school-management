@@ -7,6 +7,9 @@ import type { ScheduleCreateInput } from '@/lib/mappers'
 import { requireAuth } from '@/lib/require-auth'
 
 export async function GET() {
+  const { error } = await requireAuth()
+  if (error) return error
+  
   const rows = await prisma.scheduleEntry.findMany({
     include: scheduleInclude,
     orderBy: [{ weekday: 'asc' }, { startTime: 'asc' }],
