@@ -10,14 +10,15 @@ import {
 } from '@/lib/schedule-service'
 import { requireAuth } from '@/lib/require-auth'
 
-type RouteContext = { params: { id: string } }
+type RouteContext = { params: Promise<{ id: string }> }
 
 function parseId(id: string) {
   const n = Number(id)
   return Number.isInteger(n) && n > 0 ? n : null
 }
 
-export async function PATCH(request: Request, { params }: RouteContext) {
+export async function PATCH(request: Request, context: RouteContext) {
+  const params = await context.params
   //admin only
   const { dbUser, error } = await requireAuth()
   if (error) return error
@@ -59,7 +60,8 @@ export async function PATCH(request: Request, { params }: RouteContext) {
   }
 }
 
-export async function DELETE(_request: Request, { params }: RouteContext) {
+export async function DELETE(_request: Request, context: RouteContext) {
+  const params = await context.params
   const { dbUser, error } = await requireAuth()
   if (error) return error
 

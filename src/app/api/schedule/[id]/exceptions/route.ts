@@ -5,9 +5,10 @@ import { toScheduleEntry } from '@/lib/mappers'
 import { createCancellationAnnouncement } from '@/lib/schedule-service'
 import { requireAuth } from '@/lib/require-auth'
 
-type RouteContext = { params: { id: string } }
+type RouteContext = { params: Promise<{ id: string }> }
 
-export async function POST(request: Request, { params }: RouteContext) {
+export async function POST(request: Request, context: RouteContext) {
+  const params = await context.params
   const { dbUser, error } = await requireAuth()
   if (error) return error
 
