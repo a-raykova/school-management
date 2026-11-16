@@ -3,7 +3,7 @@ import { jsonError, jsonOk, parseJsonBody } from '@/lib/api-response'
 import { requireAdmin } from '@/lib/require-admin'
 import { archiveOrDeleteIfUsed } from '@/lib/archive-or-delete'
 
-type RouteContext = { params: { id: string } }
+type RouteContext = { params: Promise<{ id: string }> }
 
 function parseId(id: string) {
   const n = Number(id)
@@ -11,7 +11,8 @@ function parseId(id: string) {
 }
 
 // admin-only: rename a room, recolor it, or restore an archived one
-export async function PATCH(request: Request, { params }: RouteContext) {
+export async function PATCH(request: Request, context: RouteContext) {
+  const params = await context.params
   const { error } = await requireAdmin()
   if (error) return error
 
@@ -47,7 +48,8 @@ export async function PATCH(request: Request, { params }: RouteContext) {
 
 // admin-only: delete the room outright if nothing references it,
 // otherwise archive it (isActive: false) so existing classes keep working
-export async function DELETE(request: Request, { params }: RouteContext) {
+export async function DELETE(request: Request, context: RouteContext) {
+  const params = await context.params
   const { error } = await requireAdmin()
   if (error) return error
 

@@ -4,7 +4,7 @@ import { requireAdmin } from '@/lib/require-admin'
 import { toTeacherOption } from '@/lib/mappers'
 import { archiveOrDeleteIfUsed } from '@/lib/archive-or-delete'
 
-type RouteContext = { params: { id: string } }
+type RouteContext = { params: Promise<{ id: string }> }
 
 function parseId(id: string) {
   const n = Number(id)
@@ -22,7 +22,8 @@ const teacherSelect = {
 } as const
 
 // admin-only: edit a teacher's name, email, subtitle, honorarium rate, or active status
-export async function PATCH(request: Request, { params }: RouteContext) {
+export async function PATCH(request: Request, context: RouteContext) {
+  const params = await context.params
   const { error } = await requireAdmin()
   if (error) return error
 
@@ -99,7 +100,8 @@ export async function PATCH(request: Request, { params }: RouteContext) {
 // otherwise archive them (isActive: false) so past classes/honorariums keep working.
 // NOTE: this does NOT touch their Supabase login — deleting or disabling that,
 // if you want them actually locked out, is still a separate manual step.
-export async function DELETE(request: Request, { params }: RouteContext) {
+export async function DELETE(_request: Request, context: RouteContext) {
+  const params = await context.params
   const { error } = await requireAdmin()
   if (error) return error
 
