@@ -1,12 +1,14 @@
 import { prisma } from '@/lib/prisma'
-import { jsonError, jsonOk, parseJsonBody } from '@/lib/api-response'
+import { jsonError, jsonOk, parseJsonBody, serverError } from '@/lib/api-response'
 import { requireAdmin } from '@/lib/require-admin'
 import { requireAuth } from '@/lib/require-auth'
 import { toTeacherOption } from '@/lib/mappers'
 
 //returns all teachers from db with role TEACHER
+// Teachers see names only: other teachers emails and pay rates are admin-only
+// (a teacher still gets their own rate, for the honorarium on their dashboard).
 export async function GET() {
-  const { error } = await requireAuth()
+  const { dbUser, error } = await requireAuth()
   if (error) return error
 
   const teachers = await prisma.user.findMany({
@@ -23,7 +25,11 @@ export async function GET() {
     },
   })
 
-  return jsonOk(teachers.map(toTeacherOption))
+    const options = teachers.map(toTeacherOption)
+    if (dbUser.role === 'ADMIN') return jsonOk(options)
+    return jsonOk(options.map((t) => (
+      t.id === dbUser.id ? t : { ...t, email: '', honorariumRate: null }
+    )))
 }
 
 // admin-only: create a new teacher record.
@@ -69,7 +75,7 @@ export async function POST(request: Request) {
         role: 'TEACHER',
         firstName,
         lastName,
-        email: body.email.trim(),
+        email: body.email.trim().toLowerCase(),
         subtitle: body.subtitle?.trim() || 'Teacher',
         honorariumRate: body.honorariumRate ?? null,
       },
@@ -89,7 +95,6 @@ export async function POST(request: Request) {
     if (e && typeof e === 'object' && 'code' in e && e.code === 'P2002') {
       return jsonError('A user with that email already exists', 409)
     }
-    const message = e instanceof Error ? e.message : 'Failed to create teacher'
-    return jsonError(message)
+    return serverError(e, 'Failed to create teacher')
   }
 }
