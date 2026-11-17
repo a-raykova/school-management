@@ -58,6 +58,13 @@ model User {
   targetedAnnouncements Announcement[]  @relation("AnnouncementTarget")
   authoredAnnouncements Announcement[]  @relation("AnnouncementAuthor")
 
+  groups              Group[]              @relation("GroupTeacher")
+  groupChanges        GroupChange[]        @relation("GroupChangeAuthor")
+  roomCapacityChanges RoomCapacityChange[] @relation("RoomCapacityChangeAuthor")
+
+  substitutions        GroupSubstitution[] @relation("GroupSubstitute")
+  createdSubstitutions GroupSubstitution[] @relation("GroupSubstitutionAuthor")
+
   @@index([role])
 }
 
@@ -67,7 +74,97 @@ model Room {
   color String?
   isActive Boolean @default(true)
 
+  /// max number of children the room fits. Null = not set yet (no limit).
+  capacity Int?
+
   scheduleEntries ScheduleEntry[]
+  capacityHistory RoomCapacityChange[]
+}
+
+/// one row per capacity change of a room (who, when, from → to)
+model RoomCapacityChange {
+  id          Int  @id @default(autoincrement())
+  oldCapacity Int?
+  newCapacity Int?
+
+  roomId Int
+  room   Room @relation(fields: [roomId], references: [id], onDelete: Cascade)
+
+  changedById Int?
+  changedBy   User? @relation("RoomCapacityChangeAuthor", fields: [changedById], references: [id], onDelete: SetNull)
+
+  createdAt DateTime @default(now())
+
+  @@index([roomId, createdAt])
+}
+
+model Group {
+  id           Int     @id @default(autoincrement())
+  name         String  @unique
+  studentCount Int
+  isActive     Boolean @default(true)
+
+  teacherId Int
+  teacher   User @relation("GroupTeacher", fields: [teacherId], references: [id], onDelete: Restrict)
+
+  scheduleEntries ScheduleEntry[]
+  history         GroupChange[]
+  substitutions   GroupSubstitution[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([teacherId])
+}
+
+/// temporary substitute teacher for a group (e.g. the regular teacher is sick).
+/// Every class of the group between startDate and endDate (inclusive) is taught
+/// by the substitute: it shows in their schedule and counts in their worked hours.
+model GroupSubstitution {
+  id        Int      @id @default(autoincrement())
+  startDate DateTime @db.Date
+  endDate   DateTime @db.Date
+  note      String?
+
+  groupId Int
+  group   Group @relation(fields: [groupId], references: [id], onDelete: Cascade)
+
+  substituteId Int
+  substitute   User @relation("GroupSubstitute", fields: [substituteId], references: [id], onDelete: Restrict)
+
+  createdById Int?
+  createdBy   User? @relation("GroupSubstitutionAuthor", fields: [createdById], references: [id], onDelete: SetNull)
+
+  createdAt DateTime @default(now())
+
+  @@index([groupId, startDate])
+  @@index([substituteId])
+}
+
+enum GroupChangeAction {
+  CREATED
+  UPDATED
+  ARCHIVED
+  RESTORED
+}
+
+/// one row per change of a group. `changes` holds { field: { from, to } }
+/// with human-readable values (teacher names, not ids), so the history
+/// still reads correctly after a teacher is renamed or deleted.
+model GroupChange {
+  id      Int               @id @default(autoincrement())
+  action  GroupChangeAction
+  changes Json
+
+  groupId Int
+  group   Group @relation(fields: [groupId], references: [id], onDelete: Cascade)
+
+  changedById Int?
+  changedBy   User? @relation("GroupChangeAuthor", fields: [changedById], references: [id], onDelete: SetNull)
+
+  createdAt DateTime @default(now())
+
+  @@index([groupId, createdAt])
 }
 
 model ScheduleEntry {
@@ -80,6 +177,9 @@ model ScheduleEntry {
   color      String?
   recurrence RecurrenceType
   anchorDate DateTime       @db.Date
+  /// last day the class can occur. Null = no end. Set when a group's classes
+  /// are moved to a new teacher: the old entry ends, a copy continues.
+  endDate    DateTime?      @db.Date
 
   /// true = this whole recurring class is paid via honorarium, not salary
   isOvertime Boolean @default(false)
@@ -90,6 +190,10 @@ model ScheduleEntry {
   roomId Int
   room   Room @relation(fields: [roomId], references: [id], onDelete: Restrict)
 
+  /// null only for old classes created before groups existed
+  groupId Int?
+  group   Group? @relation(fields: [groupId], references: [id], onDelete: Restrict)
+
   exceptions ScheduleException[]
 
   createdAt DateTime @default(now())
@@ -97,6 +201,7 @@ model ScheduleEntry {
 
   @@index([teacherId, weekday])
   @@index([roomId, weekday])
+  @@index([groupId])
 }
 
 model ScheduleException {

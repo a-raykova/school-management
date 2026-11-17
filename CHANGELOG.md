@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.3.0] – 2026-11-17
+### Added (database)
+- Room capacity column and RoomCapacityChange history table
+- Group, GroupChange (history) and GroupSubstitution tables
+- ScheduleEntry.groupId and ScheduleEntry.endDate columns
+- No existing data changed
+
 ## [1.2.0] – 2026-11-17
 ### Security
 - Security headers on every response (clickjacking, nosniff, referrer, HSTS); X-Powered-By removed
