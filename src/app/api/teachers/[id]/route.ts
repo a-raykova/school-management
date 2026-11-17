@@ -1,5 +1,5 @@
 import { prisma } from '@/lib/prisma'
-import { jsonError, jsonOk, parseJsonBody } from '@/lib/api-response'
+import { jsonError, jsonOk, parseJsonBody, serverError } from '@/lib/api-response'
 import { requireAdmin } from '@/lib/require-admin'
 import { toTeacherOption } from '@/lib/mappers'
 import { archiveOrDeleteIfUsed } from '@/lib/archive-or-delete'
@@ -79,7 +79,7 @@ export async function PATCH(request: Request, context: RouteContext) {
       data: {
         ...(body?.firstName != null && { firstName: body.firstName.trim() }),
         ...(body?.lastName != null && { lastName: body.lastName.trim() }),
-        ...(body?.email != null && { email: body.email.trim() }),
+        ...(body?.email != null && { email: body.email.trim().toLowerCase() }),
         ...(body?.subtitle !== undefined && { subtitle: body.subtitle?.trim() || 'Teacher' }),
         ...(body?.isActive !== undefined && { isActive: body.isActive }),
         ...(body?.honorariumRate !== undefined && { honorariumRate: body.honorariumRate }),
@@ -91,8 +91,7 @@ export async function PATCH(request: Request, context: RouteContext) {
     if (e && typeof e === 'object' && 'code' in e && e.code === 'P2002') {
       return jsonError('A user with that email already exists', 409)
     }
-    const message = e instanceof Error ? e.message : 'Failed to update teacher'
-    return jsonError(message)
+    return serverError(e, 'Failed to update teacher')
   }
 }
 

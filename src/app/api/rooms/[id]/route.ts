@@ -1,5 +1,5 @@
 import { prisma } from '@/lib/prisma'
-import { jsonError, jsonOk, parseJsonBody } from '@/lib/api-response'
+import { jsonError, jsonOk, parseJsonBody, serverError } from '@/lib/api-response'
 import { requireAdmin } from '@/lib/require-admin'
 import { archiveOrDeleteIfUsed } from '@/lib/archive-or-delete'
 
@@ -41,8 +41,7 @@ export async function PATCH(request: Request, context: RouteContext) {
     if (e && typeof e === 'object' && 'code' in e && e.code === 'P2002') {
       return jsonError('A room with that name already exists', 409)
     }
-    const message = e instanceof Error ? e.message : 'Failed to update room'
-    return jsonError(message)
+    return serverError(e, 'Failed to update room')
   }
 }
 

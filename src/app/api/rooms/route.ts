@@ -1,5 +1,5 @@
 import { prisma } from '@/lib/prisma'
-import { jsonError, jsonOk, parseJsonBody } from '@/lib/api-response'
+import { jsonError, jsonOk, parseJsonBody, serverError } from '@/lib/api-response'
 import { requireAdmin } from '@/lib/require-admin'
 import { requireAuth } from '@/lib/require-auth'
 
@@ -33,7 +33,6 @@ export async function POST(request: Request) {
     if (e && typeof e === 'object' && 'code' in e && e.code === 'P2002') {
       return jsonError('A room with that name already exists', 409)
     }
-    const message = e instanceof Error ? e.message : 'Failed to create room'
-    return jsonError(message)
+    return serverError(e, 'Failed to create room')
   }
 }

@@ -15,3 +15,12 @@ export async function parseJsonBody<T>(request: Request): Promise<T | null> {
     return null
   }
 }
+
+/**
+ * Unexpected error: log the details on the server, send only a general message
+ * (database errors can reveal table names, queries, etc.).
+ */
+export function serverError(e: unknown, publicMessage: string) {
+  console.error(`[api] ${publicMessage}:`, e)
+  return jsonError(publicMessage, 500)
+}
